@@ -1,0 +1,6 @@
+#Terraform
+**/*.terraform
+**/*.idea
+**/terraform.tfstate
+**/*.tfstate*
+**/secure_variables.tfvars
