@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+  namespace: default
+  annotations:
+    # Указываем, что ALB будет создан с помощью AWS Load Balancer Controller
+    alb.ingress.kubernetes.io/scheme: internet-facing   # Используйте "internal" для внутреннего ALB
+    alb.ingress.kubernetes.io/target-type: ip           # Варианты: "ip" или "instance"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+  # alb.ingress.kubernetes.io/subnets: subnet-12345abcde,subnet-67890fghij  # Укажите подставные ID
+  # alb.ingress.kubernetes.io/healthcheck-path: "/health"  # URL для проверки здоровья
+  labels:
+    app: frontend
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend       # Имя сервиса, к которому будет привязан ALB
+                port:
+                  number: 80
+
