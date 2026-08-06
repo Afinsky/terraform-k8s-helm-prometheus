@@ -1,30 +1,14 @@
 locals {
   common_tags = merge({
-    "coherent:client"      = "K8S practice"
-    "coherent:project"     = "K8S"
-    "coherent:environment" = var.environment
-    "coherent:owner"       = "AlexeyBotyan@coherentsolutions.com"
-    "Terraform"            = "true"
+    "client"      = "K8S practice"
+    "project"     = "K8S"
+    "environment" = var.environment
+    "owner"       = "me"
+    "Terraform"   = "true"
   })
 
-  project_name  = "abotyan"
+  project_name  = "me"
   resource_name = "${var.environment}-${local.project_name}"
-}
-
-variable "profile" {
-  description = "AWS Profile name"
-  type        = string
-}
-
-variable "environment" {
-  description = "Environment"
-  type        = string
-}
-
-variable "vanta_tags" {
-  description = "Vanta tags"
-  type        = map(string)
-  default     = {}
 }
 
 provider "aws" {
@@ -46,11 +30,4 @@ module "backend" {
   versioning                           = { status = true }
   server_side_encryption_configuration = { rule = { apply_server_side_encryption_by_default = { sse_algorithm = "AES256" } } }
   tags                                 = local.common_tags
-}
-
-output "terraform_state_bucket_id" {
-  value = module.backend.terraform_state_bucket_id
-}
-output "terraform_state_dynamodb_table_id" {
-  value = module.backend.terraform_state_dynamodb_table_id
 }

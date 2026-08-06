@@ -1,0 +1,4 @@
+formatter: "markdown"
+
+settings:
+  lockfile: false

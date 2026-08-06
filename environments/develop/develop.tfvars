@@ -1,7 +1,8 @@
-profile = "sandbox"
+profile     = "terraform"
 environment = "dev"
+region      = "us-east-1"
 
-VPC = {
+vpc = {
   csai = {
     cidr             = "10.30.0.0/16"
     azs              = ["us-east-1c", "us-east-1f"]
