@@ -8,7 +8,7 @@ output "s3_bucket_arn" {
   value       = module.s3.s3_bucket_arn #aws_s3_bucket.this.arn
 }
 
-output "terraform_state_dynamodb_table_id" {
-  description = "ID of the DynamoDB table used for Terraform state locking"
-  value       = aws_dynamodb_table.this.id
-}
+# output "terraform_state_dynamodb_table_id" {
+#   description = "ID of the DynamoDB table used for Terraform state locking"
+#   value       = aws_dynamodb_table.this.id
+# }

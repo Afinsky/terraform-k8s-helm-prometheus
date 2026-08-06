@@ -1,8 +1,8 @@
-variable "name_lock_dynamodb" {
-  description = "Name of the DynamoDB table used for Terraform state locking"
-  default     = ""
-  type        = string
-}
+# variable "name_lock_dynamodb" {
+#   description = "Name of the DynamoDB table used for Terraform state locking"
+#   default     = ""
+#   type        = string
+# }
 variable "name_terrafrom_state_s3" {
   description = "Name of the S3 bucket used to store Terraform state"
   default     = ""

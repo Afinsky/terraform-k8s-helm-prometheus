@@ -34,5 +34,4 @@ No resources.
 | Name | Description |
 | ---- | ----------- |
 | <a name="output_terraform_state_bucket_id"></a> [terraform\_state\_bucket\_id](#output\_terraform\_state\_bucket\_id) | ID of the S3 bucket used to store Terraform state |
-| <a name="output_terraform_state_dynamodb_table_id"></a> [terraform\_state\_dynamodb\_table\_id](#output\_terraform\_state\_dynamodb\_table\_id) | ID of the DynamoDB table used for Terraform state locking |
 <!-- END_TF_DOCS -->

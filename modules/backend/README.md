@@ -10,9 +10,7 @@
 
 ## Providers
 
-| Name | Version |
-| ---- | ------- |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.70 |
+No providers.
 
 ## Modules
 
@@ -22,16 +20,13 @@
 
 ## Resources
 
-| Name | Type |
-| ---- | ---- |
-| [aws_dynamodb_table.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table) | resource |
+No resources.
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Whether to allow the S3 state bucket to be destroyed even if it contains objects | `bool` | `false` | no |
-| <a name="input_name_lock_dynamodb"></a> [name\_lock\_dynamodb](#input\_name\_lock\_dynamodb) | Name of the DynamoDB table used for Terraform state locking | `string` | `""` | no |
 | <a name="input_name_terrafrom_state_s3"></a> [name\_terrafrom\_state\_s3](#input\_name\_terrafrom\_state\_s3) | Name of the S3 bucket used to store Terraform state | `string` | `""` | no |
 | <a name="input_server_side_encryption_configuration"></a> [server\_side\_encryption\_configuration](#input\_server\_side\_encryption\_configuration) | Server-side encryption configuration for the S3 state bucket | `any` | `{}` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to all resources created by this module | `map(string)` | `{}` | no |
@@ -43,5 +38,4 @@
 | ---- | ----------- |
 | <a name="output_s3_bucket_arn"></a> [s3\_bucket\_arn](#output\_s3\_bucket\_arn) | ARN of the S3 bucket used to store Terraform state |
 | <a name="output_terraform_state_bucket_id"></a> [terraform\_state\_bucket\_id](#output\_terraform\_state\_bucket\_id) | ID of the S3 bucket used to store Terraform state |
-| <a name="output_terraform_state_dynamodb_table_id"></a> [terraform\_state\_dynamodb\_table\_id](#output\_terraform\_state\_dynamodb\_table\_id) | ID of the DynamoDB table used for Terraform state locking |
 <!-- END_TF_DOCS -->
