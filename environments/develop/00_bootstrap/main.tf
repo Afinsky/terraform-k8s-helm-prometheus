@@ -29,5 +29,4 @@ module "backend" {
   versioning                           = { status = true }
   server_side_encryption_configuration = { rule = { apply_server_side_encryption_by_default = { sse_algorithm = "AES256" } } }
   tags                                 = local.common_tags
-  #name_lock_dynamodb                   = "${local.resource_name}-terraform-state-locks"
 }
