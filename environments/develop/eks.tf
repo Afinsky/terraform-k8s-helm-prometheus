@@ -2,7 +2,7 @@ module "eks" {
   source                                 = "terraform-aws-modules/eks/aws"
   version                                = "20.37.1"
   cluster_name                           = "${local.resource_name}-k8s-cluster"
-  cluster_version                        = "1.31"
+  cluster_version                        = "1.36"
   cluster_enabled_log_types              = ["audit"]
   cloudwatch_log_group_retention_in_days = 30
   cluster_endpoint_public_access         = true
@@ -52,7 +52,7 @@ module "eks" {
 
   cluster_security_group_additional_rules = {}
 
-  enable_cluster_creator_admin_permissions = false
+  enable_cluster_creator_admin_permissions = true
 
   access_entries = {
     for k in local.eks_access_entries : k.username => {
