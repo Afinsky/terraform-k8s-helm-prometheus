@@ -35,13 +35,10 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: photoapp
-  annotations:
-    # AWS-specific annotations for SSL and the load balancer
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
-    alb.ingress.kubernetes.io/target-type: "ip"
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
-    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:417886991962:certificate/d0b4098a-cba7-4e88-a8be-851edc78b59e"
-    alb.ingress.kubernetes.io/ssl-redirect: '443'
+  # No alb.ingress.kubernetes.io/* annotations here: this Ingress uses
+  # ingressClassName "nginx", so it's reconciled by ingress-nginx, not the AWS
+  # Load Balancer Controller. TLS termination and the ACM cert live on the
+  # NLB in front of ingress-nginx (nginx.yaml / nginx.tf), not on this object.
 spec:
   ingressClassName: nginx
   rules:
