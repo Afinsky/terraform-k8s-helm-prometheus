@@ -73,3 +73,35 @@ spec:
                 name: photoapp
                 port:
                   number: 80
+
+#    - host: ourapp.abotyan.click
+#      http:
+#        paths:
+#          - path: /
+#            pathType: Prefix
+#            backend:
+#              service:
+#                name: photoapp
+#                port:
+#                  number: 80
+#          - path: /ping
+#            pathType: Prefix
+#            backend:
+#              service:
+#                name: photoapp
+#                port:
+#                  number: 80
+#          - path: /metrics
+#            pathType: Prefix
+#            backend:
+#              service:
+#                name: photoapp
+#                port:
+#                  number: 80
+#          - path: /error
+#            pathType: Prefix
+#            backend:
+#              service:
+#                name: photoapp
+#                port:
+#                  number: 80

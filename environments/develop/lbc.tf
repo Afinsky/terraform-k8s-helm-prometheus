@@ -96,5 +96,5 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   # Same access-entry ordering constraint as the ingress-nginx release: the
   # helm provider must be able to reach the API server as an admin principal.
-  depends_on = [module.eks, aws_iam_role_policy_attachment.lb_controller]
+  depends_on = [module.eks, module.vpc, aws_iam_role_policy_attachment.lb_controller]
 }
