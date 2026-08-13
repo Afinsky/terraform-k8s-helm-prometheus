@@ -1,184 +1,181 @@
-# DNS management — tasks for the next session
+# DNS management — decision made, implemented, not yet applied/tested
 
-Not implemented yet. Captures the discussion from the load-balancer/ingress
-work in `LOAD_BALANCER_MIGRATION.md` / `LOAD_BALANCER_DEEP_DIVE.md`: once the
-AWS Load Balancer Controller + ingress-nginx setup is live, host-based
-`Ingress` rules (e.g. `host: myapp.abotyan.click` in `app.yaml`) still need a
-matching DNS record pointing at the NLB — nothing in the repo creates that
-today. `route53.tf` only *reads* the existing zone
-(`data "aws_route53_zone" "zone"`); it writes nothing.
+Update: **Option C (external-dns) was chosen and is now implemented** —
+`external-dns.tf` + `external-dns.yaml`. This file originally listed three
+options to pick between; kept below for the reasoning trail, but the
+decision is made and the code exists. What's *not* done yet: no
+`terraform apply` has been run against this, so nothing below has been
+verified against a live cluster.
 
-## Decision needed first
+Context (from `LOAD_BALANCER_MIGRATION.md` / `LOAD_BALANCER_DEEP_DIVE.md`):
+once the AWS Load Balancer Controller + ingress-nginx setup is live,
+host-based `Ingress` rules (e.g. `host: myapp.abotyan.click` in `app.yaml`)
+still need a matching DNS record pointing at the NLB. `route53.tf` only
+*reads* the existing zone (`data "aws_route53_zone" "zone"`); it doesn't
+write records, and nothing else in the repo did either — that's the gap
+external-dns now fills.
 
-Pick one of the three approaches below before writing any code. Open
-question to answer at the start of next session: how many apps/hosts is this
-expected to serve — still just `photoapp` on one host, or more services
-incoming? That answer decides which option makes sense.
+## What was actually built
 
-## Option A — Manual `aws_route53_record` in Terraform
+- `external-dns.tf`: `aws_iam_role.external_dns` (IRSA, same pattern as
+  `aws_iam_role.lb_controller` in `lbc.tf`), `aws_iam_policy.external_dns`
+  (Route53 permissions, scoped to the single zone in `route53.tf` via
+  `local.zone_id` rather than the account-wide `hostedzone/*` the upstream
+  tutorial defaults to), `helm_release.external_dns` (chart
+  `external-dns/external-dns` `1.21.1`, app `v0.21.0` — current latest,
+  verified live via `helm search repo external-dns/external-dns --versions`
+  on 2026-08-13).
+- `external-dns.yaml`: static Helm values — `sources: [ingress]`,
+  `policy: upsert-only`, `registry: txt`, `provider.name: aws`, and
+  `extraArgs.publish-service: ingress-nginx/ingress-nginx-controller` (this
+  repo uses `ingressClassName: nginx`, not a raw ALB-backed Ingress, so
+  external-dns needs pointing at ingress-nginx's own Service to find the
+  NLB hostname) + `extraArgs.aws-zone-type: public`.
+- Dynamic values (`txtOwnerId` = `module.eks.cluster_name`, `domainFilters`
+  = `[local.zone_name]`, the IRSA role ARN) injected via `set`/`set_list` in
+  `helm_release.external_dns`, same split between static values file and
+  Terraform-computed `set` values already used for `nginx.tf`/`nginx.yaml`.
+- `depends_on = [module.eks, helm_release.ingress_nginx, aws_iam_role_policy_attachment.external_dns]`
+  — same reconciliation-order reasoning as the other `helm_release`s in this
+  repo: `--publish-service` needs ingress-nginx's Service to exist for the
+  first sync to find anything.
 
-Best if it stays 1-2 static hosts.
+`terraform fmt`, `terraform validate`, and the project's `tflint` rule set
+all ran clean against this. `README.md` was regenerated via `terraform-docs`
+to include the new resources.
 
-- [ ] Add a `data "kubernetes_service" "ingress_nginx_controller"` (or read
-      `helm_release.ingress_nginx` outputs some other way) to get
-      `.status.load_balancer.ingress[0].hostname` for the NLB.
-- [ ] Add an `aws_route53_record` of type **CNAME** (not ALIAS — ALIAS needs
-      the load balancer's own hosted-zone ID, which means a
-      `data "aws_lb"` lookup by tag; the NLB is created out-of-band by
-      Helm/AWS LBC, not directly by Terraform, so that lookup can fail on a
-      first-ever `apply` before the LB exists — a real chicken-and-egg
-      problem worth designing around, not hitting by surprise).
-- [ ] One record per host declared in any `Ingress` — must be kept in sync
-      by hand.
+## Still open — needs a live cluster to verify
 
-## Option B — Wildcard record
+- [ ] `terraform apply` hasn't been run. First real test: does
+      `myapp.abotyan.click` actually resolve to the NLB after apply?
+- [ ] Confirm the TXT ownership records show up correctly in the zone and
+      don't collide with anything already manually in there — `route53.tf`
+      reads an *existing* zone (`data`, not `resource`), so it's plausible
+      other records already live in it outside this repo's control.
+- [x] Watch `kubectl logs -n external-dns deploy/external-dns` on first sync
+      — **caught a real bug here**: the pod crash-looped with
+      `flag parsing error: unknown long flag '--publish-service'`.
+      `--publish-service` is an **ingress-nginx controller** flag
+      (`controller.publishService`, on by default in this chart), not an
+      external-dns one — I'd conflated the two components. external-dns's
+      `source: ingress` reads the LB hostname straight off each Ingress's
+      `.status.loadBalancer.ingress[]`, which ingress-nginx populates on
+      its own; no extra flag needed on the external-dns side. Removed
+      `extraArgs.publish-service` from `k8s/helm/external-dns.yaml`.
+- [ ] `policy: upsert-only` was kept deliberately conservative (never
+      auto-deletes) precisely because the zone predates this repo — revisit
+      to `sync` only if this zone becomes fully cluster-owned.
 
-Best fit given `acm.tf` already requests a wildcard SAN
-(`*.${local.zone_name}`) on the ACM cert — this option uses that wildcard
-cert as designed, instead of leaving it unused.
+## Options considered (kept for context, not the active plan anymore)
 
-- [ ] Single `aws_route53_record` for `*.abotyan.click` → NLB hostname
-      (CNAME, same chicken-and-egg note as Option A).
-- [ ] All routing then happens inside nginx via Host header; new `Ingress`
-      hosts under the same root domain need zero DNS changes.
-- [ ] Note the tradeoff: no per-host DNS record means DNS stops being a
-      source of truth for "what hosts actually exist," and this only covers
-      subdomains of `abotyan.click` — a future custom root domain would still
-      need its own record.
+### Option A — Manual `aws_route53_record` in Terraform
 
-## Option C — external-dns (the actual production pattern)
+Rejected for now: fine for 1-2 static hosts, but doesn't scale past that
+without touching Terraform on every new `Ingress` host, and hits the same
+ALIAS-vs-CNAME chicken-and-egg note as Option B below.
 
-Best if more services/teams get added later; this is what's used almost
-universally alongside ingress-nginx + AWS LBC in real deployments.
+### Option B — Wildcard record
 
-- [ ] New `dns.tf` (or extend `lbc.tf`): IRSA role for
-      `system:serviceaccount:external-dns:external-dns` (same pattern as
-      `aws_iam_role.lb_controller` in `lbc.tf`), policy scoped to
-      `route53:ChangeResourceRecordSets`, `route53:ListHostedZones`,
-      `route53:ListResourceRecordSets`, `route53:ListTagsForResource`.
-- [ ] `helm_release.external_dns` (chart `external-dns/external-dns`,
-      `kube-system` or its own namespace), configured with:
-  - `--source=ingress`
-  - `--publish-service=ingress-nginx/ingress-nginx-controller` (needed
-    because the DNS-worthy hostname lives on the ingress-nginx Service's
-    status, not directly on a raw ALB-backed Ingress — this repo uses
-    `ingressClassName: nginx`, not AWS LBC's Ingress path)
-  - `--domain-filter=abotyan.click` (scope to the one zone, avoid touching
-    others in the account)
-  - `--policy=upsert-only` (create/update only, never auto-delete — safer
-    for a zone that isn't dedicated solely to this cluster; revisit if the
-    zone becomes cluster-owned)
-  - TXT registry (default) for record ownership tracking — confirm
-    `--txt-owner-id` is set to something stable (e.g. cluster name) so
-    re-applies don't fight over ownership.
-- [ ] `depends_on = [module.eks, helm_release.aws_load_balancer_controller]`
-      (same access-entry / controller-readiness reasoning as
-      `helm_release.ingress_nginx` in `nginx.tf`).
-- [ ] Decide RBAC scope: cluster-wide watch, or namespace-restricted if this
-      cluster ever becomes multi-tenant.
+Would have been the pragmatic minimal choice (the ACM cert in `acm.tf`
+already has a wildcard SAN for exactly this), but doesn't generalize past
+`*.abotyan.click`, and gives up per-host DNS as a source of truth.
 
-## Recommendation if no strong preference next session
+### Option C — external-dns — chosen
 
-Given this is currently a single app (`photoapp`) on a personal domain:
-start with **Option B (wildcard)** — it's a one-record change, uses the
-already-provisioned wildcard cert, and doesn't add a new controller/IRSA
-role to operate. Revisit **Option C (external-dns)** if/when more than one
-distinct hostname pattern or more than a couple of services show up — same
-"why we didn't jump to it immediately" reasoning as EKS Auto Mode in
-`LOAD_BALANCER_DEEP_DIVE.md` Q9.
+Matches what's actually used in production alongside ingress-nginx + AWS
+LBC; see the implementation above.
 
 ---
 ---
 
-# Управление DNS-записями — задачи для следующей сессии
+# Управление DNS-записями — решение принято, реализовано, не применено/не протестировано
 
-Пока не реализовано. Фиксирует обсуждение из работы над load balancer/ingress
-(`LOAD_BALANCER_MIGRATION.md` / `LOAD_BALANCER_DEEP_DIVE.md`): как только
-связка AWS Load Balancer Controller + ingress-nginx заработает, правилам
-`Ingress` по хосту (например, `host: myapp.abotyan.click` в `app.yaml`)
-по-прежнему будет нужна соответствующая DNS-запись, указывающая на NLB — в
-репозитории сейчас этого нет вообще. `route53.tf` только *читает*
-существующую зону (`data "aws_route53_zone" "zone"`), ничего в неё не пишет.
+Обновление: **выбран и реализован вариант C (external-dns)** —
+`external-dns.tf` + `external-dns.yaml`. Этот файл изначально содержал три
+варианта на выбор; ниже они оставлены для истории рассуждений, но решение
+принято и код уже есть. Что пока **не** сделано: `terraform apply` не
+запускался, поэтому ничего ниже не проверено на живом кластере.
 
-## Сначала нужно решение
+Контекст (из `LOAD_BALANCER_MIGRATION.md` / `LOAD_BALANCER_DEEP_DIVE.md`):
+как только связка AWS Load Balancer Controller + ingress-nginx заработает,
+правилам `Ingress` по хосту (например, `host: myapp.abotyan.click` в
+`app.yaml`) по-прежнему будет нужна соответствующая DNS-запись, указывающая
+на NLB. `route53.tf` только *читает* существующую зону
+(`data "aws_route53_zone" "zone"`), записей не создаёт, и больше в
+репозитории этим никто не занимался — этот пробел теперь закрывает
+external-dns.
 
-Перед тем как писать код, выбрать один из трёх вариантов ниже. Вопрос,
-который стоит решить в начале следующей сессии: сколько приложений/хостов
-это должно обслуживать — по-прежнему только `photoapp` на одном хосте, или
-планируются другие сервисы? Ответ определяет, какой вариант имеет смысл.
+## Что реально сделано
 
-## Вариант A — Ручная `aws_route53_record` в Terraform
+- `external-dns.tf`: `aws_iam_role.external_dns` (IRSA, тот же паттерн, что
+  `aws_iam_role.lb_controller` в `lbc.tf`), `aws_iam_policy.external_dns`
+  (права Route53, ограничены одной зоной из `route53.tf` через
+  `local.zone_id`, а не аккаунт-вайд `hostedzone/*`, как по умолчанию в
+  туториале апстрима), `helm_release.external_dns` (чарт
+  `external-dns/external-dns` `1.21.1`, приложение `v0.21.0` — текущая
+  последняя версия, проверена вживую через
+  `helm search repo external-dns/external-dns --versions` 2026-08-13).
+- `external-dns.yaml`: статичные Helm-значения — `sources: [ingress]`,
+  `policy: upsert-only`, `registry: txt`, `provider.name: aws`, и
+  `extraArgs.publish-service: ingress-nginx/ingress-nginx-controller` (в
+  этом репозитории `ingressClassName: nginx`, а не голый ALB-Ingress,
+  поэтому external-dns должен смотреть именно на Service самого
+  ingress-nginx, чтобы найти hostname NLB) + `extraArgs.aws-zone-type: public`.
+- Динамические значения (`txtOwnerId` = `module.eks.cluster_name`,
+  `domainFilters` = `[local.zone_name]`, ARN IRSA-роли) переданы через
+  `set`/`set_list` в `helm_release.external_dns` — то же разделение на
+  статичный values-файл и Terraform-вычисляемые `set`, что уже используется
+  для `nginx.tf`/`nginx.yaml`.
+- `depends_on = [module.eks, helm_release.ingress_nginx, aws_iam_role_policy_attachment.external_dns]`
+  — та же логика про порядок реконсиляции, что и у остальных `helm_release`
+  в репозитории: `--publish-service` нужен Service ingress-nginx, чтобы
+  первая синхронизация вообще что-то нашла.
 
-Подходит, если хостов останется 1-2 и они статичны.
+`terraform fmt`, `terraform validate` и набор правил `tflint` проекта
+прошли чисто. `README.md` пересобран через `terraform-docs`, чтобы включить
+новые ресурсы.
 
-- [ ] Добавить `data "kubernetes_service" "ingress_nginx_controller"` (или
-      иначе получить статус) для чтения
-      `.status.load_balancer.ingress[0].hostname` NLB.
-- [ ] Добавить `aws_route53_record` типа **CNAME** (не ALIAS — ALIAS требует
-      hosted-zone ID самого балансировщика, а значит lookup через
-      `data "aws_lb"` по тегу; NLB создаётся не напрямую Terraform, а
-      Helm/AWS LBC, поэтому такой lookup может не сработать на самом первом
-      `apply`, пока балансировщика ещё не существует — реальная проблема
-      "курицы и яйца", которую стоит заранее учесть в дизайне, а не
-      наткнуться на неё внезапно).
-- [ ] По одной записи на каждый хост, объявленный в любом `Ingress` —
-      синхронизировать вручную.
+## По-прежнему открыто — нужен живой кластер для проверки
 
-## Вариант B — Wildcard-запись
+- [ ] `terraform apply` не запускался. Первая реальная проверка: реально ли
+      `myapp.abotyan.click` резолвится в NLB после apply?
+- [ ] Убедиться, что TXT-записи владения появились в зоне корректно и не
+      конфликтуют с чем-то, что уже вручную лежит в этой зоне — `route53.tf`
+      читает *существующую* зону (`data`, не `resource`), так что вполне
+      вероятно, что в ней уже есть другие записи вне контроля этого
+      репозитория.
+- [x] Посмотреть `kubectl logs -n external-dns deploy/external-dns` на
+      первой синхронизации — **и тут нашлась реальная ошибка**: под падал в
+      crash loop с `flag parsing error: unknown long flag '--publish-service'`.
+      `--publish-service` — это флаг **контроллера ingress-nginx**
+      (`controller.publishService`, включён по умолчанию в этом чарте), а
+      не флаг external-dns — я перепутал эти два компонента. external-dns с
+      `source: ingress` читает hostname LB прямо из
+      `.status.loadBalancer.ingress[]` каждого Ingress, а туда его
+      записывает сам ingress-nginx; со стороны external-dns никакой
+      дополнительный флаг не нужен. Убрал
+      `extraArgs.publish-service` из `k8s/helm/external-dns.yaml`.
+- [ ] `policy: upsert-only` оставлен намеренно консервативным (никогда не
+      удаляет записи сам) именно потому, что зона существовала до этого
+      репозитория — пересмотреть на `sync`, только если зона станет
+      полностью "собственностью" кластера.
 
-Хорошо ложится на то, что `acm.tf` уже заказывает wildcard SAN
-(`*.${local.zone_name}`) для ACM-сертификата — этот вариант использует
-wildcard-сертификат по назначению, а не оставляет его невостребованным.
+## Рассмотренные варианты (оставлены для контекста, уже не актуальный план)
 
-- [ ] Одна `aws_route53_record` для `*.abotyan.click` → hostname NLB (CNAME,
-      та же оговорка про "курицу и яйцо", что и в варианте A).
-- [ ] Дальше вся маршрутизация происходит внутри nginx по Host-заголовку;
-      новым хостам `Ingress` под тем же корневым доменом изменения DNS не
-      нужны вообще.
-- [ ] Учесть компромисс: без записи на каждый хост DNS перестаёт быть
-      источником правды о том, какие хосты реально существуют, и вариант
-      покрывает только поддомены `abotyan.click` — для будущего отдельного
-      корневого домена всё равно понадобится своя запись.
+### Вариант A — Ручная `aws_route53_record` в Terraform
 
-## Вариант C — external-dns (реальный прод-паттерн)
+Отклонён на данный момент: подходит для 1-2 статичных хостов, но не
+масштабируется дальше без правки Terraform на каждый новый хост `Ingress`, и
+упирается в ту же проблему ALIAS-vs-CNAME "курицы и яйца", что и вариант B
+ниже.
 
-Подходит, если позже добавятся другие сервисы/команды; именно это почти
-повсеместно используется вместе с ingress-nginx + AWS LBC в реальных
-проектах.
+### Вариант B — Wildcard-запись
 
-- [ ] Новый `dns.tf` (или расширить `lbc.tf`): IRSA-роль для
-      `system:serviceaccount:external-dns:external-dns` (тот же паттерн, что
-      `aws_iam_role.lb_controller` в `lbc.tf`), политика с правами
-      `route53:ChangeResourceRecordSets`, `route53:ListHostedZones`,
-      `route53:ListResourceRecordSets`, `route53:ListTagsForResource`.
-- [ ] `helm_release.external_dns` (чарт `external-dns/external-dns`, неймспейс
-      `kube-system` или отдельный), с настройками:
-  - `--source=ingress`
-  - `--publish-service=ingress-nginx/ingress-nginx-controller` (нужно, так
-    как DNS-имя, достойное записи, лежит в статусе Service самого
-    ingress-nginx, а не напрямую в Ingress с ALB — в этом репозитории
-    используется `ingressClassName: nginx`, а не путь AWS LBC через Ingress)
-  - `--domain-filter=abotyan.click` (ограничить одной зоной, не трогать
-    остальные в аккаунте)
-  - `--policy=upsert-only` (только создание/обновление, без автоудаления —
-    безопаснее для зоны, которая не выделена исключительно под этот
-    кластер; пересмотреть, если зона станет "собственностью" кластера)
-  - TXT registry (по умолчанию) для отслеживания владения записями —
-    убедиться, что `--txt-owner-id` задан чем-то стабильным (например,
-    именем кластера), чтобы повторные `apply` не конфликтовали за
-    владение.
-- [ ] `depends_on = [module.eks, helm_release.aws_load_balancer_controller]`
-      (та же логика про готовность access entry/контроллера, что и у
-      `helm_release.ingress_nginx` в `nginx.tf`).
-- [ ] Решить масштаб RBAC: наблюдение по всему кластеру или ограничение по
-      неймспейсам, если кластер когда-нибудь станет мультитенантным.
+Был бы прагматичным минимальным выбором (ACM-сертификат в `acm.tf` уже имеет
+wildcard SAN именно под это), но не обобщается дальше `*.abotyan.click`, и
+отказывается от DNS как источника правды по хостам.
 
-## Рекомендация, если в следующей сессии не будет чёткого предпочтения
+### Вариант C — external-dns — выбран
 
-Учитывая, что сейчас это одно приложение (`photoapp`) на личном домене:
-начать с **варианта B (wildcard)** — это изменение в одну запись,
-использует уже заказанный wildcard-сертификат и не добавляет новый
-контроллер/IRSA-роль в эксплуатацию. Вернуться к **варианту C
-(external-dns)**, если/когда появится больше одного паттерна хостов или
-больше пары сервисов — та же логика "почему не прыгнули сразу", что и с EKS
-Auto Mode в `LOAD_BALANCER_DEEP_DIVE.md`, В9.
+Соответствует тому, что реально используется в проде вместе с ingress-nginx
++ AWS LBC; см. реализацию выше.
