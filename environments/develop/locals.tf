@@ -63,4 +63,7 @@ locals {
     viewer = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy",
     admin  = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   }
+
+  zone_id   = data.aws_route53_zone.zone.zone_id
+  zone_name = "abotyan.click"
 }

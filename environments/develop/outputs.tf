@@ -27,7 +27,3 @@ output "oidc_provider_arn" {
   value       = module.eks.oidc_provider_arn
   description = "The ARN of the OIDC Provider for the EKS cluster."
 }
-
-# output "acm_certificate_arn" {
-#   value = module.acm_backend.acm_certificate_arn
-# }
