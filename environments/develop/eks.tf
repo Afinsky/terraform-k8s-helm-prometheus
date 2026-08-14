@@ -1,13 +1,14 @@
 module "eks" {
-  source                                 = "terraform-aws-modules/eks/aws"
-  version                                = "20.37.1"
-  cluster_name                           = "${local.resource_name}-k8s-cluster"
-  cluster_version                        = "1.36"
-  cluster_enabled_log_types              = ["audit"]
-  cloudwatch_log_group_retention_in_days = 30
-  cluster_endpoint_public_access         = true
+  source  = "terraform-aws-modules/eks/aws"
+  version = "v21.24.2"
 
-  cluster_addons = {
+  name                                   = "${local.resource_name}-k8s-cluster"
+  kubernetes_version                     = "1.36"
+  enabled_log_types                      = ["audit"]
+  cloudwatch_log_group_retention_in_days = 30
+  endpoint_public_access                 = true
+
+  addons = {
     coredns = {
       most_recent                 = true
       resolve_conflicts_on_create = "OVERWRITE"
@@ -28,9 +29,6 @@ module "eks" {
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
-  eks_managed_node_group_defaults = {
-    ## This instance type (m6a.large) is a placeholder and will not be used in the actual deployment.
-  }
 
   eks_managed_node_groups = {
     generalworkload-v4 = {
@@ -49,8 +47,6 @@ module "eks" {
       }
     }
   }
-
-  cluster_security_group_additional_rules = {}
 
   enable_cluster_creator_admin_permissions = true
 

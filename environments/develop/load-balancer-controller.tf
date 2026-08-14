@@ -3,7 +3,7 @@
 # Replaces the legacy in-tree AWS cloud provider's Service-of-type-LoadBalancer
 # reconciliation with the actively developed out-of-cluster controller. Without
 # this, `service.beta.kubernetes.io/aws-load-balancer-*` annotations on the
-# ingress-nginx Service (nginx.yaml) are handled by the legacy in-tree
+# ingress-nginx Service (ingress-nginx.yaml) are handled by the legacy in-tree
 # integration, which only supports instance targets (NodePort -> kube-proxy ->
 # pod, an extra hop) and a small, frozen annotation set.
 #

@@ -38,7 +38,7 @@ metadata:
   # No alb.ingress.kubernetes.io/* annotations here: this Ingress uses
   # ingressClassName "nginx", so it's reconciled by ingress-nginx, not the AWS
   # Load Balancer Controller. TLS termination and the ACM cert live on the
-  # NLB in front of ingress-nginx (nginx.yaml / nginx.tf), not on this object.
+  # NLB in front of ingress-nginx (ingress-nginx.yaml / ingress-nginx.tf), not on this object.
 spec:
   ingressClassName: nginx
   rules:

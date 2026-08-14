@@ -6,7 +6,7 @@
 # creates records for hosts declared in app.yaml's Ingress) and why this
 # option (vs. a manual aws_route53_record or a wildcard record) was picked.
 #
-# Same IRSA pattern as lbc.tf: dedicated role trusting only this controller's
+# Same IRSA pattern as load-balancer-controller.tf: dedicated role trusting only this controller's
 # ServiceAccount, permissions scoped to the one zone this repo manages
 # (route53.tf) rather than the account-wide `hostedzone/*` the upstream
 # tutorial defaults to - see the comment on aws_iam_policy.external_dns.
@@ -107,7 +107,7 @@ resource "helm_release" "external_dns" {
   ]
 
   # Reconciliation-order reasoning, same as helm_release.ingress_nginx in
-  # nginx.tf: ingress-nginx's Service needs to exist so its controller can
+  # ingress-nginx.tf: ingress-nginx's Service needs to exist so its controller can
   # start publishing LB status onto each Ingress (which external-dns then
   # reads), and its IAM role needs to be assumable before it can call
   # Route53 at all.

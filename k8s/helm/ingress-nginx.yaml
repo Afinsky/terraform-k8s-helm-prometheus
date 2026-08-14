@@ -1,5 +1,5 @@
 controller:
-  # TLS is terminated at the NLB (ACM cert, see nginx.tf), so nginx receives
+  # TLS is terminated at the NLB (ACM cert, see ingress-nginx.tf), so nginx receives
   # plaintext on its "http" port even for requests that arrived over https.
   # Without this, nginx can't tell the two apart and 308-redirects https
   # traffic back to https, looping.
@@ -31,7 +31,7 @@ controller:
   service:
     annotations:
       # "external" + nlb-target-type "ip" hands this Service to the AWS Load
-      # Balancer Controller (lbc.tf) instead of the legacy in-tree cloud
+      # Balancer Controller (load-balancer-controller.tf) instead of the legacy in-tree cloud
       # provider, and makes the NLB target pod IPs directly rather than
       # NodePort -> kube-proxy -> pod. Direct-to-pod also preserves the real
       # client source IP, so no PROXY protocol is needed.

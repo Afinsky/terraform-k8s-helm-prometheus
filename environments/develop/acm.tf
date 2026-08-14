@@ -1,6 +1,6 @@
 module "acm_backend" {
   source  = "terraform-aws-modules/acm/aws"
-  version = "4.0.1"
+  version = "v6.3.0"
 
   domain_name = local.zone_name
   subject_alternative_names = [

@@ -18,14 +18,14 @@ locals {
   log_retention_in_days = 365 # Days
 
   vpc = {
-    csai = {
+    homelab = {
       name                                            = "${local.resource_name}-vpc"
       default_network_acl_name                        = "${local.resource_name}-acl"
-      cidr                                            = var.vpc.csai.cidr
-      azs                                             = var.vpc.csai.azs
-      private_subnets                                 = var.vpc.csai.private_subnets
-      public_subnets                                  = var.vpc.csai.public_subnets
-      database_subnets                                = var.vpc.csai.database_subnets
+      cidr                                            = var.vpc.homelab.cidr
+      azs                                             = var.vpc.homelab.azs
+      private_subnets                                 = var.vpc.homelab.private_subnets
+      public_subnets                                  = var.vpc.homelab.public_subnets
+      database_subnets                                = var.vpc.homelab.database_subnets
       enable_flow_log                                 = var.enable_flow_log
       create_flow_log_cloudwatch_log_group            = var.enable_flow_log
       create_flow_log_cloudwatch_iam_role             = var.enable_flow_log
@@ -63,7 +63,13 @@ locals {
     viewer = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSViewPolicy",
     admin  = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   }
+}
 
+##############################################################################
+#  Route53
+##############################################################################
+
+locals {
   zone_id   = data.aws_route53_zone.zone.zone_id
   zone_name = "abotyan.click"
 }
