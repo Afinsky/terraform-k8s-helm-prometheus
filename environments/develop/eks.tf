@@ -65,11 +65,7 @@ module "eks" {
     }
   }
 
-  tags = {
-    environment = var.environment
-    managed_by  = "terraform"
-    project     = local.project_name
-  }
+  tags = local.common_tags
 }
 
 #Role for vpc cni
