@@ -17,6 +17,11 @@ spec:
         name: photoapp
         ports:
         - containerPort: 8080
+        envFrom:
+        - secretRef:
+            # Populated by external-secrets.tf's ExternalSecret below, not
+            # hand-created - see kind: ExternalSecret further down this file.
+            name: photoapp-db-credentials
 ---
 apiVersion: v1
 kind: Service
@@ -105,3 +110,25 @@ spec:
 #                name: photoapp
 #                port:
 #                  number: 80
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: photoapp-db-credentials
+spec:
+  secretStoreRef:
+    name: aws-secrets-manager
+    kind: ClusterSecretStore
+  target:
+    name: photoapp-db-credentials
+    creationPolicy: Owner
+  refreshInterval: 1h
+  data:
+    - secretKey: username
+      remoteRef:
+        key: me-dev-us-east-1/photoapp/db-credentials
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: me-dev-us-east-1/photoapp/db-credentials
+        property: password
