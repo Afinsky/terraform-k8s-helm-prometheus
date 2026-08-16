@@ -4,4 +4,4 @@
 **/terraform.tfstate
 **/*.tfstate*
 **/secure_variables.tfvars
-**/*/docs
+docs/
