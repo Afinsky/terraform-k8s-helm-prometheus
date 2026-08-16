@@ -19,11 +19,13 @@ module "eks" {
       )
     }
     kube-proxy = {
-      most_recent = true
+      most_recent    = true
+      before_compute = true
     }
     vpc-cni = {
       most_recent              = true
       service_account_role_arn = aws_iam_role.vpc_cni.arn
+      before_compute           = true
     }
   }
 
@@ -50,20 +52,36 @@ module "eks" {
 
   enable_cluster_creator_admin_permissions = true
 
-  access_entries = {
-    for k in local.eks_access_entries : k.username => {
-      kubernetes_groups = []
-      principal_arn     = k.username
-      policy_associations = {
-        single = {
-          policy_arn = k.access_policy
-          access_scope = {
-            type = "cluster"
+  access_entries = merge(
+    {
+      "aliaksei" = {
+        kubernetes_groups = [] # Added for consistency with the other access entries, but not strictly necessary for this entry
+        principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/aliaksei"
+        policy_associations = {
+          admin = {
+            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+            access_scope = {
+              type = "cluster"
+            }
+          }
+        }
+      }
+    },
+    {
+      for k in local.eks_access_entries : k.username => {
+        kubernetes_groups = []
+        principal_arn     = k.username
+        policy_associations = {
+          single = {
+            policy_arn = k.access_policy
+            access_scope = {
+              type = "cluster"
+            }
           }
         }
       }
     }
-  }
+  )
 
   tags = local.common_tags
 }
