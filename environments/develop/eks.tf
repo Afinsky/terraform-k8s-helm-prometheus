@@ -34,9 +34,9 @@ module "eks" {
 
   eks_managed_node_groups = {
     generalworkload-v4 = {
-      min_size       = 1
-      max_size       = 1
-      desired_size   = 1
+      min_size       = 2
+      max_size       = 2
+      desired_size   = 2
       instance_types = ["t3.medium"] # "m5a.xlarge"
       capacity_type  = "SPOT"
       disk_size      = 60
