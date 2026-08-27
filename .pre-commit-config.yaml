@@ -51,3 +51,17 @@ repos:
       - id: check-json
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+#  - repo: https://github.com/mxab/pre-commit-trivy.git
+#    rev: v0.72.0
+#    hooks:
+#      - id: trivyfs-docker
+#        args:
+#          - --skip-dirs
+#          - "**/.terraform"
+#          - . # last arg indicates the path/file to scan
+#      - id: trivyconfig-docker
+#        args:
+#          - --skip-dirs
+#          - "**/.terraform"
+#          - . # last arg indicates the path/file to scan

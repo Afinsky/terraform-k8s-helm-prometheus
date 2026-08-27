@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: photoapp
+  # No alb.ingress.kubernetes.io/* annotations here: this Ingress uses
+  # ingressClassName "nginx", so it's reconciled by ingress-nginx, not the
+  # AWS Load Balancer Controller. TLS termination and the ACM cert live on
+  # the NLB in front of ingress-nginx (gitops/platform/ingress-nginx/), not
+  # on this object.
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: myapp.abotyan.click
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: photoapp
+                port:
+                  number: 80
+          - path: /ping
+            pathType: Prefix
+            backend:
+              service:
+                name: photoapp
+                port:
+                  number: 80
+          - path: /metrics
+            pathType: Prefix
+            backend:
+              service:
+                name: photoapp
+                port:
+                  number: 80
+          - path: /error
+            pathType: Prefix
+            backend:
+              service:
+                name: photoapp
+                port:
+                  number: 80

@@ -68,54 +68,30 @@ resource "aws_iam_role_policy_attachment" "external_secrets" {
   policy_arn = aws_iam_policy.external_secrets.arn
 }
 
-resource "helm_release" "external_secrets" {
-  name             = "external-secrets"
-  repository       = "https://charts.external-secrets.io"
-  chart            = "external-secrets"
-  namespace        = "external-secrets"
-  create_namespace = true
-  version          = "2.9.0" # controller app version v2.9.0.
-  # Verified live via `helm search repo external-secrets/external-secrets --versions`
-  # on 2026-08-16. Re-run that search before every future version bump.
+# The Helm release + ClusterSecretStore moved to ArgoCD
+# (gitops/platform/external-secrets/) — the ClusterSecretStore manifest lives
+# at gitops/platform/external-secrets/manifests/cluster-secret-store.yaml
+# now, applied by the same Application as the chart via sync-wave ordering
+# (chart's CRDs and ServiceAccount first, ClusterSecretStore after). Terraform
+# creates the namespace + ServiceAccount ahead of time (the chart deploys
+# with serviceAccount.create=false) so the IRSA annotation never has to
+# round-trip through a Helm `set` value.
+resource "kubernetes_namespace_v1" "external_secrets" {
+  metadata {
+    name = "external-secrets"
+  }
 
-  values = [file("./../../k8s/helm/external-secrets.yaml")]
-
-  set = [
-    {
-      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-      value = aws_iam_role.external_secrets.arn
-      type  = "string"
-    }
-  ]
-
-  # Same access-entry ordering constraint as the other helm_release
-  # resources: the helm provider needs to reach the API server as an admin
-  # principal, and the IRSA role needs to be assumable once pods start.
-  # Also needs the LB Controller's webhook pod up first: it registers a
-  # cluster-wide mutating webhook on Service objects, and this chart creates
-  # its own webhook Service - without this dependency the create can race
-  # ahead and hit "no endpoints available" on that webhook.
-  depends_on = [module.eks, aws_iam_role_policy_attachment.external_secrets, helm_release.aws_load_balancer_controller]
+  depends_on = [module.eks]
 }
 
-# # ClusterSecretStore, applied the same way app.tf applies app.yaml: decode
-# # raw YAML from k8s/manifests/ rather than hand-writing a kubernetes_manifest
-# # block. Cluster-scoped (vs. namespaced SecretStore) so any namespace's
-# # ExternalSecret can reference it by name.
-# locals {
-#   external_secrets_manifest = provider::kubernetes::manifest_decode_multi(
-#     templatefile("${path.module}/../../k8s/manifests/external-secrets.yaml", {
-#       region = var.region
-#     })
-#   )
-# }
-#
-# resource "kubernetes_manifest" "external_secrets_cluster_store" {
-#   count    = length(local.external_secrets_manifest)
-#   manifest = local.external_secrets_manifest[count.index]
-#
-#   # The ClusterSecretStore CRD only exists once the chart's CRDs are
-#   # installed, and the ServiceAccount it references (external-secrets) must
-#   # already exist with its IRSA annotation.
-#   depends_on = [module.eks, helm_release.external_secrets]
-# }
+resource "kubernetes_service_account_v1" "external_secrets" {
+  metadata {
+    name      = "external-secrets"
+    namespace = kubernetes_namespace_v1.external_secrets.metadata[0].name
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.external_secrets.arn
+    }
+  }
+
+  depends_on = [aws_iam_role_policy_attachment.external_secrets]
+}

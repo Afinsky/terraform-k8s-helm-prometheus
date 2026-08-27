@@ -1,0 +1,6 @@
+serviceAccount:
+  create: false
+  name: aws-load-balancer-controller
+# vpcId intentionally omitted: the controller auto-discovers it from the
+# node's EC2 instance metadata. See load-balancer-controller.tf for why
+# that's preferred over a Terraform-computed literal here.

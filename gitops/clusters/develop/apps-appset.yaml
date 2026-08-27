@@ -1,0 +1,33 @@
+# Fans out one Application per subdirectory of gitops/apps/. Mirrors
+# platform-appset.yaml exactly, pointed at the apps AppProject instead.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: apps-develop
+  namespace: argocd
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: https://github.com/Afinsky/terraform-k8s-helm-prometheus.git
+        revision: main
+        directories:
+          - path: gitops/apps/*
+  template:
+    metadata:
+      name: "{{.path.basename}}"
+    spec:
+      project: apps
+      source:
+        repoURL: https://github.com/Afinsky/terraform-k8s-helm-prometheus.git
+        targetRevision: main
+        path: "{{.path.path}}/overlays/develop"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{.path.basename}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

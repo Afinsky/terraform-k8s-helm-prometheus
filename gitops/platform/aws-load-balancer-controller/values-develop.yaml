@@ -1,0 +1,7 @@
+# Deterministic from environments/develop/develop.tfvars + locals.tf's
+# naming convention (`${environment}-${project_name}-k8s-cluster`,
+# region), not discovered at apply time — safe as plain literals. If
+# develop.tfvars's `environment` or locals.tf's `project_name` ever change,
+# update this file to match.
+clusterName: dev-me-k8s-cluster
+region: us-east-1

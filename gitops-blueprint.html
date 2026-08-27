@@ -1,0 +1,861 @@
+<title>GitOps Blueprint</title>
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  :root {
+    --paper: #EEF1F3;
+    --paper-raised: #FFFFFF;
+    --paper-sunken: #E4E8EB;
+    --ink: #12161D;
+    --ink-soft: #4A5361;
+    --ink-faint: #7C8494;
+    --line: #D7DCE1;
+    --line-strong: #BAC2C9;
+    --accent: #B96A22;
+    --accent-ink: #7A4517;
+    --accent-soft: #F3E2CC;
+    --structure: #1F6E6A;
+    --structure-ink: #164F4C;
+    --structure-soft: #D9EEEC;
+    --success: #3E6B40;
+    --success-soft: #DDEADD;
+    --warning: #8A6A17;
+    --warning-soft: #F1E6C4;
+    --danger: #93392A;
+    --danger-soft: #F3DDD7;
+    --shadow: 0 1px 2px rgba(18, 22, 29, 0.06), 0 8px 24px -12px rgba(18, 22, 29, 0.18);
+
+    --font-display: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+    --font-body: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0E1218;
+      --paper-raised: #161B23;
+      --paper-sunken: #0A0D12;
+      --ink: #E6E9EC;
+      --ink-soft: #9AA4B2;
+      --ink-faint: #6B7482;
+      --line: #262D38;
+      --line-strong: #333C48;
+      --accent: #E0954D;
+      --accent-ink: #F5C48C;
+      --accent-soft: #33251A;
+      --structure: #4FB3AC;
+      --structure-ink: #8FD4CE;
+      --structure-soft: #142B29;
+      --success: #7CB280;
+      --success-soft: #16241A;
+      --warning: #D6B860;
+      --warning-soft: #2A2313;
+      --danger: #DD8873;
+      --danger-soft: #2C1712;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -14px rgba(0, 0, 0, 0.55);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #0E1218;
+    --paper-raised: #161B23;
+    --paper-sunken: #0A0D12;
+    --ink: #E6E9EC;
+    --ink-soft: #9AA4B2;
+    --ink-faint: #6B7482;
+    --line: #262D38;
+    --line-strong: #333C48;
+    --accent: #E0954D;
+    --accent-ink: #F5C48C;
+    --accent-soft: #33251A;
+    --structure: #4FB3AC;
+    --structure-ink: #8FD4CE;
+    --structure-soft: #142B29;
+    --success: #7CB280;
+    --success-soft: #16241A;
+    --warning: #D6B860;
+    --warning-soft: #2A2313;
+    --danger: #DD8873;
+    --danger-soft: #2C1712;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 32px -14px rgba(0, 0, 0, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 56px 32px 140px;
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; padding: 32px 20px 90px; }
+    .toc { position: static; order: 2; }
+  }
+
+  /* ---------- Header ---------- */
+
+  .masthead {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-bottom: 36px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--structure);
+  }
+
+  h1.title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 4vw, 42px);
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .dek {
+    font-family: var(--font-body);
+    font-size: 19px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .meta-chip {
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 4px 10px;
+    background: var(--paper-raised);
+  }
+
+  /* ---------- TOC ---------- */
+
+  .toc {
+    position: sticky;
+    top: 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--font-display);
+    font-size: 13px;
+  }
+
+  .toc-label {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: 10px;
+  }
+
+  .toc a {
+    display: flex;
+    gap: 10px;
+    padding: 6px 8px;
+    margin: 0 -8px;
+    border-radius: 4px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    line-height: 1.4;
+  }
+
+  .toc a:hover, .toc a:focus-visible {
+    background: var(--paper-raised);
+    color: var(--ink);
+  }
+  .toc a:focus-visible { outline: 2px solid var(--structure); outline-offset: -2px; }
+
+  .toc .num { color: var(--ink-faint); }
+
+  /* ---------- Main content ---------- */
+
+  main { min-width: 0; display: flex; flex-direction: column; gap: 64px; }
+
+  section { scroll-margin-top: 32px; display: flex; flex-direction: column; gap: 16px; }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+  }
+
+  .section-num {
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--structure);
+    letter-spacing: 0.02em;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.005em;
+    text-wrap: balance;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    margin: 28px 0 0;
+    color: var(--ink);
+  }
+
+  p { margin: 0; max-width: 70ch; }
+  p + p { margin-top: 14px; }
+
+  ul, ol { margin: 0; padding-left: 1.3em; max-width: 68ch; display: flex; flex-direction: column; gap: 8px; }
+  li { padding-left: 0.2em; }
+
+  strong { color: var(--ink); font-weight: 700; }
+
+  a.inline-link { color: var(--structure); }
+
+  /* ---------- Callout ---------- */
+
+  .callout {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--structure);
+    background: var(--paper-raised);
+    border-radius: 4px;
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .callout.accent { border-left-color: var(--accent); }
+  .callout-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--structure);
+  }
+  .callout.accent .callout-label { color: var(--accent); }
+  .callout ul { max-width: none; }
+
+  /* ---------- Principles grid ---------- */
+
+  .principles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .principle {
+    background: var(--paper-raised);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .principle .k {
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .principle p { font-size: 15px; color: var(--ink-soft); max-width: none; }
+
+  /* ---------- Tags ---------- */
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-display);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .tag--tf { background: var(--structure-soft); color: var(--structure-ink); }
+  .tag--argo { background: var(--accent-soft); color: var(--accent-ink); }
+  .tag--new { background: var(--success-soft); color: var(--success); }
+
+  /* ---------- Code panel ---------- */
+
+  .code-panel {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--paper-raised);
+    box-shadow: var(--shadow);
+  }
+  .code-panel__bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px;
+    font-family: var(--font-display);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    background: var(--paper-sunken);
+    border-bottom: 1px solid var(--line);
+  }
+  .code-panel__bar .dots { display: flex; gap: 5px; }
+  .code-panel__bar .dots span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--line-strong);
+  }
+  .code-panel pre {
+    margin: 0;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: var(--font-display);
+    font-size: 12.6px;
+    line-height: 1.7;
+    color: var(--ink);
+  }
+  .code-panel code { white-space: pre; }
+  .code-panel .cm { color: var(--ink-faint); }
+  .code-panel .kw { color: var(--structure); }
+  .code-panel .st { color: var(--accent-ink); }
+
+  /* ---------- Table ---------- */
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; }
+  table { border-collapse: collapse; width: 100%; min-width: 480px; font-size: 14.5px; }
+  th, td {
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  thead th {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--paper-sunken);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child { font-family: var(--font-display); font-size: 13px; color: var(--ink); white-space: nowrap; }
+  td.num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- Checklist grid ---------- */
+
+  .checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .check-item {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px 18px;
+    background: var(--paper-raised);
+    display: flex;
+    gap: 12px;
+  }
+  .check-item .mark {
+    font-family: var(--font-display);
+    color: var(--structure);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .check-item .body-txt { display: flex; flex-direction: column; gap: 4px; }
+  .check-item .h { font-family: var(--font-display); font-size: 13.5px; font-weight: 700; color: var(--ink); }
+  .check-item .d { font-size: 14px; color: var(--ink-soft); }
+
+  /* ---------- Footer ---------- */
+
+  footer {
+    grid-column: 1 / -1;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">terraform-k8s-helm-prometheus &middot; gitops design</div>
+    <h1 class="title">GitOps Blueprint</h1>
+    <p class="dek">Структура репозитория для ArgoCD: как разложить platform-компоненты и приложения по каталогам, чтобы это работало на одном кластере сегодня и без переписывания масштабировалось на несколько кластеров завтра.</p>
+    <div class="meta-row">
+      <span class="meta-chip">2026 · ApplicationSet-first</span>
+      <span class="meta-chip">монорепо → готово к split</span>
+      <span class="meta-chip"><span class="tag tag--tf" style="margin-right:6px">Terraform</span><span class="tag tag--argo">ArgoCD</span></span>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="Оглавление">
+    <div class="toc-label">Содержание</div>
+    <a href="#principles"><span class="num">00</span> Принципы</a>
+    <a href="#tree"><span class="num">01</span> Дерево каталога</a>
+    <a href="#bootstrap"><span class="num">02</span> Bootstrap</a>
+    <a href="#clusters"><span class="num">03</span> Clusters &amp; ApplicationSet</a>
+    <a href="#platform"><span class="num">04</span> Platform-слой</a>
+    <a href="#apps"><span class="num">05</span> Apps-слой</a>
+    <a href="#projects"><span class="num">06</span> AppProject / RBAC</a>
+    <a href="#secrets"><span class="num">07</span> Секреты</a>
+    <a href="#sync"><span class="num">08</span> Sync policy &amp; волны</a>
+    <a href="#promotion"><span class="num">09</span> Promotion между env</a>
+    <a href="#ci"><span class="num">10</span> CI-валидация</a>
+    <a href="#observability"><span class="num">11</span> Наблюдаемость Argo</a>
+    <a href="#scale"><span class="num">12</span> Масштабирование</a>
+    <a href="#checklist"><span class="num">13</span> Prod-ready чек-лист</a>
+    <a href="#split"><span class="num">14</span> Когда делить репозиторий</a>
+    <a href="#topology"><span class="num">15</span> cluster vs namespace</a>
+  </nav>
+
+  <main>
+
+    <section id="principles">
+      <div class="section-head"><span class="section-num">00</span><h2>Принципы, из которых выведена структура</h2></div>
+      <p>Каждое решение по дереву каталогов ниже — следствие одного из этих пяти правил. Если возникнет вопрос «а можно иначе» — сверяйтесь с этим списком, а не с интуицией.</p>
+      <div class="principles">
+        <div class="principle"><div class="k">Каталоги, не ветки</div><p>Окружение — это папка (<code>overlays/prod</code>), а не git-ветка. Ветки для окружений расходятся и требуют болезненных merge; папки в одной ветке — просто диффятся.</p></div>
+        <div class="principle"><div class="k">ApplicationSet, не Application</div><p>Ни одного ArgoCD Application не создаётся руками. Все они — продукт генератора поверх файловой структуры. Новое приложение = новая папка, не новый YAML для Argo.</p></div>
+        <div class="principle"><div class="k">Git — единственный источник правды</div><p>Ни kubectl edit, ни ручной helm upgrade. Если ресурса нет в git — считаем, что его не должно быть в кластере (self-heal это обеспечивает).</p></div>
+        <div class="principle"><div class="k">Секретов в git нет</div><p>Ни в открытом виде, ни зашифрованными «на всякий случай». Ссылка на секрет — да, значение — никогда.</p></div>
+        <div class="principle"><div class="k">CI проверяет форму, CD — доставляет</div><p>Валидность YAML, политики и линтеры — это pull request. Синхронизация с кластером — это ArgoCD. Смешивать эти две роли в одном пайплайне не стоит.</p></div>
+      </div>
+    </section>
+
+    <section id="tree">
+      <div class="section-head"><span class="section-num">01</span><h2>Дерево каталога целиком</h2></div>
+      <p>Новая папка <code>gitops/</code> ложится рядом с существующим <code>environments/</code> в этом же репозитории (обоснование монорепо — в разделе 14). Внутри Terraform ничего не переносится — он лишь получает одну новую точку входа: helm-релиз самого ArgoCD и один root-Application.</p>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>дерево · terraform-k8s-helm-prometheus/</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code>.
+├── environments/develop/              <span class="cm">существующий Terraform — почти без изменений</span>
+│   └── argocd.tf                      <span class="tag tag--tf">TF</span> <span class="cm">helm_release "argocd" + root Application (kubernetes_manifest)</span>
+│
+└── gitops/                            <span class="tag tag--new">NEW</span> <span class="cm">весь ArgoCD-контент живёт здесь</span>
+    ├── README.md                      <span class="cm">«как добавить приложение» в 5 строк</span>
+    │
+    ├── bootstrap/
+    │   └── root.yaml                  <span class="cm">единственный ручной Application — app-of-apps,</span>
+    │                                   <span class="cm">создаётся Terraform'ом один раз и больше не трогается</span>
+    │
+    ├── clusters/
+    │   └── develop/                   <span class="cm">1 папка = 1 физический кластер</span>
+    │       ├── cluster.yaml           <span class="cm">метаданные: env, region, domain — читает matrix generator</span>
+    │       ├── platform-appset.yaml   <span class="tag tag--argo">Argo</span> <span class="cm">git generator по platform/*/</span>
+    │       └── apps-appset.yaml       <span class="tag tag--argo">Argo</span> <span class="cm">git generator по apps/*/</span>
+    │       <span class="cm"># появится staging/prod → рядом новая папка, platform/ и apps/ не трогаем</span>
+    │
+    ├── platform/                      <span class="cm">add-on'ы кластера, 1 папка = 1 Argo Application</span>
+    │   ├── aws-load-balancer-controller/
+    │   │   ├── application.yaml       <span class="cm">upstream helm-чарт, без форка</span>
+    │   │   ├── values-base.yaml
+    │   │   └── values-develop.yaml
+    │   ├── ingress-nginx/
+    │   │   ├── application.yaml
+    │   │   ├── values-base.yaml
+    │   │   └── values-develop.yaml
+    │   ├── external-dns/
+    │   │   └── ...
+    │   ├── external-secrets/
+    │   │   ├── application.yaml
+    │   │   ├── values-base.yaml
+    │   │   └── manifests/cluster-secret-store.yaml
+    │   ├── kube-prometheus-stack/
+    │   │   ├── application.yaml
+    │   │   ├── values-base.yaml
+    │   │   └── values-develop.yaml
+    │   └── karpenter/
+    │       ├── application.yaml
+    │       └── manifests/{nodepool.yaml, ec2nodeclass.yaml}
+    │
+    ├── apps/                          <span class="cm">бизнес-приложения</span>
+    │   └── photoapp/
+    │       ├── base/
+    │       │   ├── kustomization.yaml
+    │       │   ├── deployment.yaml
+    │       │   ├── service.yaml
+    │       │   ├── ingress.yaml
+    │       │   └── external-secret.yaml
+    │       └── overlays/
+    │           ├── develop/kustomization.yaml
+    │           └── prod/kustomization.yaml
+    │
+    ├── projects/                      <span class="cm">AppProject — граница RBAC</span>
+    │   ├── platform.yaml              <span class="cm">только инфра-команда</span>
+    │   └── apps.yaml                  <span class="cm">шире доступ, но только apps/* и свои namespace</span>
+    │
+    └── policies/                      <span class="cm">проверяется в CI, не в кластере</span>
+        ├── require-resource-limits.rego
+        └── disallow-latest-tag.rego</code></pre>
+      </div>
+    </section>
+
+    <section id="bootstrap">
+      <div class="section-head"><span class="section-num">02</span><h2>Bootstrap — единственный шов между Terraform и Argo</h2></div>
+      <p>Terraform ставит ArgoCD как обычный <code>helm_release</code> (он не отличается от других контроллеров в репозитории — тот же паттерн IRSA, тот же <code>depends_on</code>). Дальше Terraform создаёт ровно один дополнительный объект — корневой <code>Application</code>, указывающий на <code>gitops/bootstrap/root.yaml</code>. С этого момента Terraform больше никогда не создаёт и не меняет ничего внутри <code>gitops/</code> — это единственная точка передачи ответственности.</p>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>gitops/bootstrap/root.yaml</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code><span class="kw">apiVersion</span>: argoproj.io/v1alpha1
+<span class="kw">kind</span>: Application
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: root
+  <span class="kw">namespace</span>: argocd
+<span class="kw">spec</span>:
+  <span class="kw">project</span>: <span class="st">default</span>
+  <span class="kw">source</span>:
+    <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+    <span class="kw">targetRevision</span>: <span class="st">main</span>
+    <span class="kw">path</span>: <span class="st">gitops/clusters/develop</span>
+  <span class="kw">destination</span>:
+    <span class="kw">server</span>: <span class="st">https://kubernetes.default.svc</span>
+    <span class="kw">namespace</span>: <span class="st">argocd</span>
+  <span class="kw">syncPolicy</span>:
+    <span class="kw">automated</span>:
+      <span class="kw">prune</span>: <span class="st">true</span>
+      <span class="kw">selfHeal</span>: <span class="st">true</span></code></pre>
+      </div>
+      <p>Дальше <code>root</code> раскрывает два <code>ApplicationSet</code> из <code>clusters/develop/</code> — а они уже рекурсивно разворачивают всё остальное. Ручных <code>kubectl apply</code> после первого bootstrap быть не должно.</p>
+    </section>
+
+    <section id="clusters">
+      <div class="section-head"><span class="section-num">03</span><h2>Clusters/ и генераторы ApplicationSet</h2></div>
+      <p>Каждая ApplicationSet использует <strong>git generator directories</strong> — она сканирует папку и создаёт один Application на каждую найденную подпапку. Добавить компонент = создать папку. Ничего в Argo-конфиге редактировать не нужно.</p>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>gitops/clusters/develop/platform-appset.yaml</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code><span class="kw">apiVersion</span>: argoproj.io/v1alpha1
+<span class="kw">kind</span>: ApplicationSet
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: platform-develop
+  <span class="kw">namespace</span>: argocd
+<span class="kw">spec</span>:
+  <span class="kw">goTemplate</span>: <span class="st">true</span>
+  <span class="kw">generators</span>:
+    - <span class="kw">git</span>:
+        <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+        <span class="kw">revision</span>: <span class="st">main</span>
+        <span class="kw">directories</span>:
+          - <span class="kw">path</span>: <span class="st">gitops/platform/*</span>
+  <span class="kw">template</span>:
+    <span class="kw">metadata</span>:
+      <span class="kw">name</span>: <span class="st">"platform-{{.path.basename}}-develop"</span>
+    <span class="kw">spec</span>:
+      <span class="kw">project</span>: <span class="st">platform</span>
+      <span class="kw">source</span>:
+        <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+        <span class="kw">targetRevision</span>: <span class="st">main</span>
+        <span class="kw">path</span>: <span class="st">"{{.path.path}}"</span>
+      <span class="kw">destination</span>:
+        <span class="kw">server</span>: <span class="st">https://kubernetes.default.svc</span>
+        <span class="kw">namespace</span>: <span class="st">"{{.path.basename}}"</span>
+      <span class="kw">syncPolicy</span>:
+        <span class="kw">automated</span>: { <span class="kw">prune</span>: <span class="st">true</span>, <span class="kw">selfHeal</span>: <span class="st">true</span> }
+        <span class="kw">syncOptions</span>: [<span class="st">CreateNamespace=true</span>, <span class="st">ServerSideApply=true</span>]</code></pre>
+      </div>
+      <p><code>apps-appset.yaml</code> — зеркало этого файла, только <code>path: gitops/apps/*</code> и <code>project: apps</code>. Два генератора, две зоны ответственности, одна и та же механика.</p>
+    </section>
+
+    <section id="platform">
+      <div class="section-head"><span class="section-num">04</span><h2>platform/ — add-on'ы кластера</h2></div>
+      <p>Каждый контроллер, который сегодня описан связкой «<code>aws_iam_role</code> + <code>helm_release</code>» в одном <code>.tf</code>-файле, разделяется на две половины:</p>
+      <ul>
+        <li><span class="tag tag--tf">Terraform</span> оставляет себе IAM-роль и создаёт <strong>голый <code>kubernetes_service_account_v1</code></strong> с аннотацией <code>eks.amazonaws.com/role-arn</code> — без Helm.</li>
+        <li><span class="tag tag--argo">ArgoCD</span> получает чистый Helm-чарт из <code>platform/&lt;name&gt;/</code>, где <code>values-base.yaml</code> задаёт <code>serviceAccount.create: false</code> и <code>serviceAccount.name: &lt;то же имя&gt;</code>.</li>
+      </ul>
+      <p>Ни один YAML в <code>gitops/</code> не содержит terraform-вычисляемых значений — граница получается буквальной, не «по договорённости».</p>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>gitops/platform/external-dns/application.yaml</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code><span class="kw">apiVersion</span>: argoproj.io/v1alpha1
+<span class="kw">kind</span>: Application
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: platform-external-dns
+  <span class="kw">namespace</span>: argocd
+<span class="kw">spec</span>:
+  <span class="kw">project</span>: <span class="st">platform</span>
+  <span class="kw">sources</span>: <span class="cm"># multi-source: чарт из upstream, values — из этого репо</span>
+    - <span class="kw">repoURL</span>: <span class="st">https://kubernetes-sigs.github.io/external-dns/</span>
+      <span class="kw">chart</span>: <span class="st">external-dns</span>
+      <span class="kw">targetRevision</span>: <span class="st">1.21.1</span>
+      <span class="kw">helm</span>:
+        <span class="kw">valueFiles</span>: [<span class="st">$values/gitops/platform/external-dns/values-base.yaml</span>,
+                     <span class="st">$values/gitops/platform/external-dns/values-develop.yaml</span>]
+    - <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+      <span class="kw">targetRevision</span>: <span class="st">main</span>
+      <span class="kw">ref</span>: <span class="st">values</span>
+  <span class="kw">syncPolicy</span>:
+    <span class="kw">automated</span>: { <span class="kw">prune</span>: <span class="st">true</span>, <span class="kw">selfHeal</span>: <span class="st">true</span> }
+    <span class="kw">retry</span>: <span class="cm"># see §08 — ordering vs. LB Controller/ingress-nginx is retry, not sync-wave</span>
+      <span class="kw">limit</span>: <span class="st">5</span>
+      <span class="kw">backoff</span>: { <span class="kw">duration</span>: <span class="st">10s</span>, <span class="kw">factor</span>: <span class="st">2</span>, <span class="kw">maxDuration</span>: <span class="st">3m</span> }</code></pre>
+      </div>
+      <p>Upstream-чарты используются напрямую по версии, без форка — форк оправдан только когда нужно патчить шаблон чарта, а не значения (тогда добавляется Kustomize post-renderer поверх Helm-вывода). Ни <code>source:</code>, ни <code>sync-wave</code>-аннотация здесь больше не стоят рядом с <code>sources:</code> — см. поправку в §08: для независимых, сгенерированных ApplicationSet'ом Application'ов эта аннотация ничего не упорядочивает.</p>
+    </section>
+
+    <section id="apps">
+      <div class="section-head"><span class="section-num">05</span><h2>apps/ — Kustomize base + overlays</h2></div>
+      <p>Для собственных приложений (в отличие от upstream-чартов) — Kustomize, не Helm: манифесты простые, шаблонизатор не нужен, а <code>base/</code> + <code>overlays/&lt;env&gt;</code> даёт ровно то различие между окружениями, которое требуется — реплики, домен, лимиты ресурсов — без дублирования всего YAML.</p>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>gitops/apps/photoapp/overlays/prod/kustomization.yaml</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code><span class="kw">apiVersion</span>: kustomize.config.k8s.io/v1beta1
+<span class="kw">kind</span>: Kustomization
+<span class="kw">resources</span>:
+  - <span class="st">../../base</span>
+<span class="kw">patches</span>:
+  - <span class="kw">target</span>: { <span class="kw">kind</span>: Deployment, <span class="kw">name</span>: photoapp }
+    <span class="kw">patch</span>: |-
+      - op: replace
+        path: /spec/replicas
+        value: 5
+  - <span class="kw">target</span>: { <span class="kw">kind</span>: Ingress, <span class="kw">name</span>: photoapp }
+    <span class="kw">patch</span>: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: myapp.abotyan.click
+<span class="kw">images</span>:
+  - <span class="kw">name</span>: photoapp
+    <span class="kw">newName</span>: &lt;account&gt;.dkr.ecr.us-east-1.amazonaws.com/me
+    <span class="kw">newTag</span>: <span class="st">v1.4.2</span> <span class="cm"># никогда :latest — см. промоушен ниже</span></code></pre>
+      </div>
+    </section>
+
+    <section id="projects">
+      <div class="section-head"><span class="section-num">06</span><h2>AppProject — граница RBAC, а не формальность</h2></div>
+      <p>Без <code>AppProject</code> любой, кто имеет доступ к ArgoCD, может задеплоить что угодно в любой namespace. Два проекта разводят «инфраструктуру» и «приложения» так же, как это разведено в <code>platform/</code> и <code>apps/</code> — доступ и структура каталогов зеркалят друг друга.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>AppProject</th><th>sourceRepos</th><th>destinations</th><th>кто</th></tr></thead>
+          <tbody>
+            <tr><td>platform</td><td>этот репозиторий + upstream helm-репо контроллеров</td><td>любой namespace, cluster-scoped ресурсы разрешены</td><td>инфра-команда</td></tr>
+            <tr><td>apps</td><td>этот репозиторий</td><td>только namespace приложений, без cluster-scoped</td><td>app-команды</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Именно эта граница — то место, где RBAC перестаёт быть «доверием на словах»: app-команда физически не может создать ClusterRole через свой Application, даже если попытается.</p>
+    </section>
+
+    <section id="secrets">
+      <div class="section-head"><span class="section-num">07</span><h2>Секреты: ничего не меняется, просто применяется последовательно</h2></div>
+      <p>В репозитории уже есть External Secrets Operator, читающий AWS Secrets Manager — этот механизм переносится в <code>gitops/</code> без изменений: <code>ExternalSecret</code> лежит рядом с <code>Deployment</code> в <code>apps/photoapp/base/</code>, значение секрета никогда не попадает в git, туда попадает только <em>ссылка</em> на него (<code>remoteRef.key</code>).</p>
+      <div class="callout accent">
+        <div class="callout-label">Правило без исключений</div>
+        <p>Если для какого-то нового компонента ESO не подходит (например, статичный non-secret конфиг, который всё же не хочется светить публично) — используется SOPS с шифрованием через тот же путь IAM/KMS, что уже есть в проекте. Base64 в ConfigMap/Secret — не вариант ни при каких обстоятельствах, это не шифрование.</p>
+      </div>
+    </section>
+
+    <section id="sync">
+      <div class="section-head"><span class="section-num">08</span><h2>Sync policy и порядок волн</h2></div>
+      <p>Сегодня порядок разворачивания задан явными <code>depends_on</code> в Terraform. В GitOps-мире напрашивается прямая замена — аннотация <code>argocd.argoproj.io/sync-wave</code> — но у неё есть ограничение, которое стоит проговорить прежде, чем на неё опираться.</p>
+      <div class="callout accent">
+        <div class="callout-label">Поправка по факту реализации</div>
+        <p><code>sync-wave</code> упорядочивает ресурсы <em>внутри одного</em> Application — то есть работает между источниками одного multi-source Application (см. <code>external-secrets</code> ниже), и работает между дочерними Application'ами настоящего app-of-apps, где родитель применяет их как собственные ресурсы своего sync. Application'ы, которые порождает <strong>ApplicationSet</strong> (все <code>platform-*</code> из §04), — независимые top-level объекты, не ресурсы чьего-то sync, поэтому аннотация на них попросту ничего не упорядочивает, даже если выглядит рабочей.</p>
+      </div>
+      <p>Отсюда — два разных механизма для двух разных ситуаций:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Что упорядочиваем</th><th>Механизм</th><th>Пример</th></tr></thead>
+          <tbody>
+            <tr><td>Ресурсы внутри одного Application</td><td><code>sync-wave</code> на ресурсе</td><td>CRD чарта external-secrets (волна 0) → <code>ClusterSecretStore</code> (волна 1), см. §07</td></tr>
+            <tr><td>Независимые <code>platform-*</code> Application'ы</td><td><code>syncPolicy.retry</code> с backoff</td><td>ingress-nginx падает на "no endpoints available", пока LB Controller не поднялся — и сам восстанавливается на следующей попытке</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>На практике для add-on'ов это не потеря надёжности, а сознательный выбор: установки идемпотентны, повторный retry с backoff даёт тот же результат, что и жёсткий гейт, просто не мгновенно — а вот ложное чувство порядка от нерабочей аннотации было бы хуже, чем честный retry.</p>
+      <p>Для критичных ресурсов (CRD, PV) prune держится выключенным точечно — аннотация <code>argocd.argoproj.io/sync-options: Prune=false</code> на конкретном ресурсе, а не отказ от <code>automated.prune</code> для всего Application: автоматическое удаление должно оставаться включённым везде, где оно безопасно.</p>
+    </section>
+
+    <section id="promotion">
+      <div class="section-head"><span class="section-num">09</span><h2>Промоушен между окружениями</h2></div>
+      <p>Тег образа продвигается из develop в prod через <strong>pull request</strong>, меняющий одну строку в <code>overlays/prod/kustomization.yaml</code> (<code>newTag</code>) — не через copy-paste манифеста и не через автоматический апдейтер без ревью.</p>
+      <ul>
+        <li><strong>develop:</strong> можно доверить <code>ArgoCD Image Updater</code> — новый тег из ECR коммитится в <code>overlays/develop/</code> автоматически, git остаётся источником правды, просто коммит пишет бот.</li>
+        <li><strong>prod:</strong> только ручной PR с ревью. Это единственное решение здесь, где скорость сознательно приносится в жертву аудируемости.</li>
+      </ul>
+    </section>
+
+    <section id="ci">
+      <div class="section-head"><span class="section-num">10</span><h2>Что проверяет CI до мержа</h2></div>
+      <p>ArgoCD синхронизирует то, что прошло review — но review человека не ловит невалидный YAML или образ на <code>:latest</code>. Эти проверки — обязательный gate перед мержем, отдельно от самого ArgoCD.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Проверка</th><th>Инструмент</th></tr></thead>
+          <tbody>
+            <tr><td>Манифест валиден для K8s API</td><td>kubeconform</td></tr>
+            <tr><td>Kustomize/Helm рендерится без ошибок</td><td>kustomize build / helm template</td></tr>
+            <tr><td>Нет <code>:latest</code>, есть resources/limits, нет privileged</td><td>conftest + policies/*.rego</td></tr>
+            <tr><td>В диффе не проскочил секрет</td><td>gitleaks</td></tr>
+            <tr><td>Чарт-обвязка синтаксически корректна</td><td>helm lint</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="observability">
+      <div class="section-head"><span class="section-num">11</span><h2>Кто следит за самим ArgoCD</h2></div>
+      <p>ArgoCD Notifications controller шлёт в Slack/webhook события <code>on-sync-failed</code> и <code>on-health-degraded</code> — деградация замечается до того, как о ней узнают из отчёта пользователя. Метрики <code>argocd-*</code> компонентов скрейпит тот же <code>kube-prometheus-stack</code>, который сам разворачивается через этот же механизм — самореференция здесь осознанная: если Argo сломается, это будет видно в дашборде, который он же и поставил.</p>
+    </section>
+
+    <section id="scale">
+      <div class="section-head"><span class="section-num">12</span><h2>Что происходит при добавлении staging/prod</h2></div>
+      <p>Это тест того, действительно ли структура масштабируется, а не просто выглядит аккуратно на одном кластере. Добавление второго физического кластера:</p>
+      <ol>
+        <li>Новая папка <code>clusters/prod/</code> с собственными <code>cluster.yaml</code> / <code>platform-appset.yaml</code> / <code>apps-appset.yaml</code> — <code>platform/</code> и <code>apps/</code> не трогаются вообще.</li>
+        <li>Для по-настоящему N-кластерного роста генератор меняется с <code>git</code> на <strong>matrix</strong>: пересечение списка кластеров (по label) и списка папок <code>platform/*</code> — тогда даже <code>clusters/&lt;name&gt;/*-appset.yaml</code> перестаёт дублироваться, остаётся один matrix-генератор на весь флот.</li>
+      </ol>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>matrix generator · один файл на весь флот кластеров</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code><span class="kw">generators</span>:
+  - <span class="kw">matrix</span>:
+      <span class="kw">generators</span>:
+        - <span class="kw">clusters</span>:
+            <span class="kw">selector</span>:
+              <span class="kw">matchLabels</span>: { <span class="kw">env</span>: <span class="st">production</span> }
+        - <span class="kw">git</span>:
+            <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+            <span class="kw">directories</span>: [{ <span class="kw">path</span>: <span class="st">gitops/platform/*</span> }]</code></pre>
+      </div>
+      <p>Новый кластер с правильным label начинает получать весь platform-стек автоматически, без единой правки существующих файлов.</p>
+    </section>
+
+    <section id="checklist">
+      <div class="section-head"><span class="section-num">13</span><h2>Prod-ready чек-лист</h2></div>
+      <div class="checklist">
+        <div class="check-item"><span class="mark">→</span><div class="body-txt"><span class="h">HA самого ArgoCD</span><span class="d">≥2 реплики repo-server/application-controller, Redis в HA-режиме.</span></div></div>
+        <div class="check-item"><span class="mark">→</span><div class="body-txt"><span class="h">SSO вместо admin-пароля</span><span class="d">OIDC (GitHub/Google), локальный admin отключён после первого входа.</span></div></div>
+        <div class="check-item"><span class="mark">→</span><div class="body-txt"><span class="h">TLS на UI/API Argo</span><span class="d">через тот же ingress-nginx + ACM, что уже настроен для остального кластера.</span></div></div>
+        <div class="check-item"><span class="mark">→</span><div class="body-txt"><span class="h">Конфиг Argo — тоже код</span><span class="d"><code>argocd-cm</code>/<code>argocd-rbac-cm</code> живут в <code>gitops/bootstrap/</code>, не редактируются через UI.</span></div></div>
+        <div class="check-item"><span class="mark">→</span><div class="body-txt"><span class="h">Resource quotas per namespace</span><span class="d">каждый Application из <code>apps/</code> деплоится в свой namespace с лимитами.</span></div></div>
+        <div class="check-item"><span class="mark">→</span><div class="body-txt"><span class="h">Disaster recovery — это re-bootstrap</span><span class="d">потеря кластера чинится повторным <code>terraform apply</code>: он ставит Argo и root-Application, дальше кластер сам восстанавливает своё состояние из git.</span></div></div>
+      </div>
+    </section>
+
+    <section id="split">
+      <div class="section-head"><span class="section-num">14</span><h2>Когда выносить gitops/ в отдельный репозиторий</h2></div>
+      <p>Сейчас — монорепо: <code>gitops/</code> лежит рядом с <code>environments/</code> в одном репозитории. Это осознанный выбор под текущий масштаб (один разработчик/homelab), а не временная небрежность. Критерий переезда — не размер кода, а <strong>разница в правах доступа</strong>: как только появляется команда, которой нужен доступ к <code>gitops/apps/</code>, но не к Terraform/AWS-кредам, монорепо перестаёт быть удобной RBAC-границей.</p>
+      <p>Структура спроектирована так, что перенос — механическая операция: <code>git subtree split</code> вытаскивает <code>gitops/</code> в новый репозиторий с сохранением истории, а единственное, что требует правки — значение <code>repoURL</code> в bootstrap-манифестах и ApplicationSet-генераторах. Ни один каталог внутри не переименовывается.</p>
+    </section>
+
+    <section id="topology">
+      <div class="section-head"><span class="section-num">15</span><h2>Топология: environment↔cluster или environment↔namespace</h2></div>
+      <p>В разделах 01–14 «окружение» негласно приравнивалось к «кластеру» — папка <code>clusters/develop/</code> называется по имени окружения, а не по имени физического кластера. Это подходило первой схеме почти без трения. Вторая требует честно разъединить эти два понятия: окружение остаётся точкой в дереве каталогов, а вот <em>что именно</em> оно означает для генератора — кластер целиком или namespace внутри общего кластера — становится параметром, а не архитектурным решением, зашитым в структуру.</p>
+
+      <h3>Что меняется структурно</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Аспект</th><th>environment ↔ cluster</th><th>environment ↔ namespace</th></tr></thead>
+          <tbody>
+            <tr><td>Изоляция blast radius</td><td>Полная: отдельный control plane, отдельная VPC, отдельный node pool, отдельный OIDC provider</td><td>Только логическая: общий control plane, общие ноды — течь в dev физически достижима из prod без сетевого прыжка</td></tr>
+            <tr><td>platform/ (LBC, ingress-nginx, external-dns, karpenter)</td><td>Разворачивается N раз — по разу на кластер, естественно, это singleton-контроллеры кластера</td><td>Разворачивается <strong>один раз</strong> на весь набор «окружений» — namespace их не размножает, это не опция, а факт устройства K8s</td></tr>
+            <tr><td>apps/ (photoapp)</td><td>Один и тот же overlay логически привязан к своему кластеру через <code>destination.server</code></td><td>overlay привязан к <code>destination.namespace</code> — тот же оverlay-механизм Kustomize, другое поле в шаблоне ApplicationSet</td></tr>
+            <tr><td>IRSA / IAM</td><td>Одна роль на контроллер, <code>sub</code> проверяет только namespace внутри своего кластера — простое условие</td><td>По роли на (env × сервис-аккаунт), <code>sub</code> обязан включать конкретный namespace (<code>photoapp-prod</code> vs <code>photoapp-develop</code>) — легко перепутать при копипасте политики</td></tr>
+            <tr><td>Топология ArgoCD</td><td>Hub-and-spoke: один ArgoCD (management-кластер) регистрирует N целевых кластеров через <code>cluster</code> Secret — либо ArgoCD в каждом кластере (проще ментально, но N раз своя HA/SSO/RBAC)</td><td>Один ArgoCD, один <code>destination.server: https://kubernetes.default.svc</code> — топология вообще не встаёт вопросом</td></tr>
+            <tr><td>Новые обязательные примитивы</td><td>Не нужны — граница уже проведена на уровне AWS</td><td><code>ResourceQuota</code>, <code>LimitRange</code>, <code>NetworkPolicy</code>, обычно ещё <code>PriorityClass</code> — без них шумный сосед в dev съедает CPU/memory у prod на общих нодах</td></tr>
+            <tr><td>Стоимость</td><td>N control plane (~$73/мес каждый на EKS) + N раз базовая нагрузка platform-стека</td><td>Один control plane, один комплект platform-стека — на порядок дешевле</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Как это выглядит в генераторах</h3>
+      <p>Для namespace-схемы измерение «окружение» переезжает из <code>clusters</code>-генератора в <strong>list-генератор</strong>, а <code>platform-appset.yaml</code> вообще перестаёт знать про окружения — он остаётся ровно таким, как в разделе 03.</p>
+      <div class="code-panel">
+        <div class="code-panel__bar"><span>gitops/clusters/homelab/apps-appset.yaml · environment = namespace</span><span class="dots"><span></span><span></span><span></span></span></div>
+        <pre><code><span class="kw">apiVersion</span>: argoproj.io/v1alpha1
+<span class="kw">kind</span>: ApplicationSet
+<span class="kw">metadata</span>:
+  <span class="kw">name</span>: apps-homelab
+  <span class="kw">namespace</span>: argocd
+<span class="kw">spec</span>:
+  <span class="kw">goTemplate</span>: <span class="st">true</span>
+  <span class="kw">generators</span>:
+    - <span class="kw">matrix</span>:
+        <span class="kw">generators</span>:
+          - <span class="kw">git</span>:
+              <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+              <span class="kw">revision</span>: <span class="st">main</span>
+              <span class="kw">directories</span>: [{ <span class="kw">path</span>: <span class="st">gitops/apps/*</span> }]
+          - <span class="kw">list</span>: <span class="cm"># сама ось "окружение" — не кластер, а элемент списка</span>
+              <span class="kw">elements</span>:
+                - <span class="kw">env</span>: <span class="st">develop</span>
+                - <span class="kw">env</span>: <span class="st">staging</span>
+                - <span class="kw">env</span>: <span class="st">prod</span>
+  <span class="kw">template</span>:
+    <span class="kw">metadata</span>:
+      <span class="kw">name</span>: <span class="st">"{{.path.basename}}-{{.env}}"</span>
+    <span class="kw">spec</span>:
+      <span class="kw">project</span>: apps
+      <span class="kw">source</span>:
+        <span class="kw">repoURL</span>: <span class="st">https://github.com/&lt;org&gt;/terraform-k8s-helm-prometheus.git</span>
+        <span class="kw">targetRevision</span>: <span class="st">main</span>
+        <span class="kw">path</span>: <span class="st">"{{.path.path}}/overlays/{{.env}}"</span>
+      <span class="kw">destination</span>:
+        <span class="kw">server</span>: <span class="st">https://kubernetes.default.svc</span> <span class="cm"># один и тот же кластер для всех</span>
+        <span class="kw">namespace</span>: <span class="st">"{{.path.basename}}-{{.env}}"</span></code></pre>
+      </div>
+      <p>Кластерная схема из раздела 12 отличается ровно одним: вместо <code>list</code>-генератора по env стоит <code>clusters</code>-генератор с селектором по label — а <code>destination.namespace</code> меняется местами с <code>destination.server</code>. Сам факт, что различие сводится к перестановке двух полей в одном YAML, и есть ответ на вопрос «насколько рабочий подход»: структура выдерживает обе схемы, потому что <code>platform/</code> и <code>apps/</code> с самого начала не знали, что такое «окружение» — это знание целиком инкапсулировано в generator'е одного файла.</p>
+
+      <div class="callout">
+        <div class="callout-label">Что не выдерживает переноса как есть</div>
+        <ul>
+          <li><strong>AppProject.destinations</strong> в namespace-схеме нужно сузить до паттерна <code>photoapp-*</code> вместо привязки к конкретному кластеру — граница становится мягче, и это нужно компенсировать <code>NetworkPolicy</code>/RBAC внутри кластера, а не считать решённым по умолчанию.</li>
+          <li><strong>IRSA-условие <code>sub</code></strong> в Terraform обязано перечислять namespace явно на каждое окружение — то, что в кластерной схеме была одна роль на контроллер, здесь становится N ролей (или одна роль с более широким, но всё ещё явным списком namespace).</li>
+        </ul>
+      </div>
+
+      <h3>Что выбрать для этого проекта сейчас</h3>
+      <p>CLAUDE.md прямо описывает текущее состояние: один environment (<code>develop</code>), homelab-масштаб, один поддерживающий. При таком масштабе <strong>namespace-схема — прагматичный старт</strong>: один control plane, один комплект platform-стека, заметно дешевле на AWS-счёте, и весь blueprint из разделов 01–14 применяется почти без изменений — меняется только generator в <code>apps-appset.yaml</code> (list вместо clusters) и добавляются `ResourceQuota`/`NetworkPolicy` по namespace.</p>
+      <p>Держать путь к кластерной схеме открытым — дёшево: если <code>prod</code> в будущем получит реальных пользователей и деньги на кону, типичное решение большинства команд — <strong>гибрид</strong>: prod выносится в собственный кластер (изоляция важна там, где она действительно нужна), а develop/staging остаются namespace'ами в одном общем нагрузочном кластере (экономия там, где изоляция не критична). Поскольку измерение «окружение» уже вынесено в один generator одного файла, такая миграция — это правка <code>apps-appset.yaml</code> для одного конкретного env, а не переписывание <code>platform/</code> или <code>apps/</code>.</p>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>terraform-k8s-helm-prometheus / gitops</span>
+    <span>Продолжение анализа: Terraform vs ArgoCD ownership</span>
+  </footer>
+
+</div>

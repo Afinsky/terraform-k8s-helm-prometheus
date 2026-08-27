@@ -987,11 +987,11 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: online-boutique
-  # Same reasoning as k8s/manifests/app.yaml's Ingress: ingressClassName "nginx"
-  # means this is reconciled by ingress-nginx (ingress-nginx.tf), not the AWS
-  # Load Balancer Controller. TLS terminates on the NLB in front of
-  # ingress-nginx using the ACM cert from acm.tf; nginx itself receives
-  # plaintext.
+  # Same reasoning as gitops/apps/photoapp/base/ingress.yaml: ingressClassName
+  # "nginx" means this is reconciled by ingress-nginx
+  # (gitops/platform/ingress-nginx/), not the AWS Load Balancer Controller.
+  # TLS terminates on the NLB in front of ingress-nginx using the ACM cert
+  # from acm.tf; nginx itself receives plaintext.
 spec:
   ingressClassName: nginx
   rules:

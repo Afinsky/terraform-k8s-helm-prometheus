@@ -1,0 +1,6 @@
+# Deterministic from locals.tf (zone_name) and the EKS module's naming
+# convention (cluster_name), not discovered at apply time — safe as plain
+# literals. Keep in sync with locals.tf / develop.tfvars if either changes.
+txtOwnerId: dev-me-k8s-cluster
+domainFilters:
+  - abotyan.click

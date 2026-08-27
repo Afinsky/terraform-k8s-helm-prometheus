@@ -1,0 +1,6 @@
+# See aws-load-balancer-controller/generator.yaml's header for what this
+# file is and how clusters/develop/platform-appset.yaml consumes it.
+chartRepoURL: https://kubernetes-sigs.github.io/external-dns/
+chartName: external-dns
+chartVersion: "1.21.1" # controller app v0.21.0 — verified via `helm search repo external-dns/external-dns --versions`, re-check before bumping.
+namespace: external-dns

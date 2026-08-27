@@ -8,7 +8,7 @@ provider:
   name: aws
 
 serviceAccount:
-  create: true
+  create: false
   name: external-dns
 
 extraArgs:

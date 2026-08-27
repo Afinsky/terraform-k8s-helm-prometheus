@@ -75,41 +75,29 @@ resource "aws_iam_role_policy_attachment" "external_dns" {
   policy_arn = aws_iam_policy.external_dns.arn
 }
 
-resource "helm_release" "external_dns" {
-  name             = "external-dns"
-  repository       = "https://kubernetes-sigs.github.io/external-dns/"
-  chart            = "external-dns"
-  namespace        = "external-dns"
-  create_namespace = true
-  version          = "1.21.1" # controller app version v0.21.0.
-  # Verified live via `helm search repo external-dns/external-dns --versions`
-  # on 2026-08-13. Re-run that search before every future version bump.
+# The Helm release moved to ArgoCD (gitops/platform/external-dns/). Terraform
+# creates the namespace + ServiceAccount ahead of time (the chart deploys
+# with serviceAccount.create=false) so the IRSA annotation never has to
+# round-trip through a Helm `set` value. txtOwnerId (= cluster name) and
+# domainFilters (= local.zone_name) are plain literals in
+# gitops/platform/external-dns/values-develop.yaml instead - both are
+# deterministic from develop.tfvars/locals.tf, not discovered at apply time.
+resource "kubernetes_namespace_v1" "external_dns" {
+  metadata {
+    name = "external-dns"
+  }
 
-  values = [file("./../../k8s/helm/external-dns.yaml")]
+  depends_on = [module.eks]
+}
 
-  set = [
-    {
-      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-      value = aws_iam_role.external_dns.arn
-      type  = "string"
-    },
-    {
-      name  = "txtOwnerId"
-      value = module.eks.cluster_name
+resource "kubernetes_service_account_v1" "external_dns" {
+  metadata {
+    name      = "external-dns"
+    namespace = kubernetes_namespace_v1.external_dns.metadata[0].name
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.external_dns.arn
     }
-  ]
+  }
 
-  set_list = [
-    {
-      name  = "domainFilters"
-      value = [local.zone_name]
-    }
-  ]
-
-  # Reconciliation-order reasoning, same as helm_release.ingress_nginx in
-  # ingress-nginx.tf: ingress-nginx's Service needs to exist so its controller can
-  # start publishing LB status onto each Ingress (which external-dns then
-  # reads), and its IAM role needs to be assumable before it can call
-  # Route53 at all.
-  depends_on = [module.eks, helm_release.ingress_nginx, aws_iam_role_policy_attachment.external_dns]
+  depends_on = [aws_iam_role_policy_attachment.external_dns]
 }
