@@ -14,7 +14,14 @@ variable "enable_flow_log" {
   default     = false
 }
 
-variable "VPC" {
-  type    = any
-  default = null
+variable "vpc" {
+  description = "VPC configuration keyed by network name"
+  type        = any
+  default     = null
+}
+
+variable "region" {
+  type        = any
+  default     = "us-east-1"
+  description = "value of the region where the resources will be created"
 }

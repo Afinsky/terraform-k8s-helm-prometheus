@@ -1,0 +1,21 @@
+sources:
+  - ingress
+
+policy: sync #upsert-only
+registry: txt
+
+provider:
+  name: aws
+
+serviceAccount:
+  create: true
+  name: external-dns
+
+extraArgs:
+  # No --publish-service: that flag belongs to the ingress-nginx controller
+  # binary (controller.publishService, on by default - see helm show values
+  # ingress-nginx/ingress-nginx), which copies the Service's LB hostname
+  # into every Ingress's .status.loadBalancer.ingress[]. external-dns's
+  # `source: ingress` reads that status directly, so nothing extra is
+  # needed here to find the NLB hostname.
+  aws-zone-type: public

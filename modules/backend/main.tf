@@ -12,18 +12,3 @@ module "s3" {
   restrict_public_buckets              = true
   tags                                 = merge({ Name = var.name_terrafrom_state_s3 }, var.tags)
 }
-
-resource "aws_dynamodb_table" "this" {
-  name         = var.name_lock_dynamodb
-  billing_mode = "PAY_PER_REQUEST"
-  #read_capacity  = 5
-  #write_capacity = 5
-  hash_key = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-
-  tags = merge({ Name = var.name_lock_dynamodb }, var.tags)
-}

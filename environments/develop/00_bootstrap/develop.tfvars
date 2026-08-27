@@ -1,2 +1,2 @@
-profile     = "sandbox"
+profile     = "terraform"
 environment = "dev"

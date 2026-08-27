@@ -1,24 +1,25 @@
-variable "name_lock_dynamodb" {
-  default = ""
-  type    = string
-}
 variable "name_terrafrom_state_s3" {
-  default = ""
-  type    = string
+  description = "Name of the S3 bucket used to store Terraform state"
+  default     = ""
+  type        = string
 }
 variable "tags" {
-  default = {}
-  type    = map(string)
+  description = "Tags to apply to all resources created by this module"
+  default     = {}
+  type        = map(string)
 }
 variable "force_destroy" {
-  type    = bool
-  default = false
+  description = "Whether to allow the S3 state bucket to be destroyed even if it contains objects"
+  type        = bool
+  default     = false
 }
 variable "versioning" {
-  type    = map(string)
-  default = {}
+  description = "Versioning configuration for the S3 state bucket"
+  type        = map(string)
+  default     = {}
 }
 variable "server_side_encryption_configuration" {
-  type    = any
-  default = {}
+  description = "Server-side encryption configuration for the S3 state bucket"
+  type        = any
+  default     = {}
 }
