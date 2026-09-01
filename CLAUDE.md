@@ -4,20 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Terraform-managed AWS EKS cluster ("homelab"-style dev environment) plus everything deployed onto
-it. Two tools, two directories, one clean handoff between them:
+Terraform-managed AWS EKS cluster ("homelab"-style dev environment). The workloads and add-ons
+deployed onto it live in a **separate repository**, `argo-k8s-helm`
+(github.com/Afinsky/argo-k8s-helm), reconciled by ArgoCD. Two repos, one clean handoff between
+them:
 
-- **`environments/develop/`** — Terraform. Owns anything that only AWS can create: VPC, EKS
-  control plane, IAM/IRSA roles, ACM cert, ECR, the S3 state backend. Also installs ArgoCD itself
-  (the one `helm_release` Terraform still runs) and applies exactly one more resource — a root
-  ArgoCD `Application` — and then stops.
-- **`gitops/`** — ArgoCD. Owns every Helm release and every Kubernetes workload from that root
-  `Application` down: cluster add-ons (LB Controller, ingress-nginx, external-dns,
-  external-secrets) and apps (`photoapp`, `online-boutique`). Nothing here is ever touched by
-  Terraform or by hand — see `gitops/README.md`.
+- **this repo, `environments/develop/`** — Terraform. Owns anything that only AWS can create: VPC,
+  EKS control plane, IAM/IRSA roles, ACM cert, ECR, the S3 state backend. Also installs ArgoCD
+  itself (the one `helm_release` Terraform still runs) and applies exactly one more resource — a
+  root ArgoCD `Application` pointing at the `argo-k8s-helm` repo (defined inline in `argocd.tf`,
+  must stay in sync with `bootstrap/root.yaml` over there) — and then stops.
+- **`argo-k8s-helm` repo (`gitops/` tree)** — ArgoCD. Owns every Helm release and every Kubernetes
+  workload from that root `Application` down: cluster add-ons (LB Controller, ingress-nginx,
+  external-dns, external-secrets) and apps (`photoapp`, `online-boutique`). Nothing there is ever
+  touched by Terraform or by hand — see that repo's `gitops/README.md`. It is checked out locally
+  at `/Users/aliaksei/WORK/argo-k8s-helm` as an additional working directory.
 
-Single environment today: `environments/develop` / `gitops/clusters/develop`. State is remote (S3
-backend), bootstrapped from a separate `00_bootstrap` config.
+Single environment today: `environments/develop` / the `argo-k8s-helm` repo's `gitops/clusters/develop`.
+State is remote (S3 backend), bootstrapped from a separate `00_bootstrap` config.
 
 ## Commands
 
@@ -41,9 +45,9 @@ tflint --call-module-type=all --config=.tflint.hcl
 terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject environments/develop
 ```
 
-`gitops/` has no Terraform commands at all — changes there are plain git commits/PRs; ArgoCD
-picks them up on its own reconcile loop, nothing to run locally beyond `kustomize build` /
-`helm template` to sanity-check a change renders before pushing.
+The `argo-k8s-helm` repo has no Terraform commands at all — changes there are plain git
+commits/PRs; ArgoCD picks them up on its own reconcile loop, nothing to run locally beyond
+`kustomize build` / `helm template` to sanity-check a change renders before pushing.
 
 Pre-commit hooks (`.pre-commit-config.yaml`) run `terraform_validate`, `terraform_fmt`,
 `terraform_docs` (auto-regenerates each module's `README.md` between `BEGIN_TF_DOCS`/
@@ -99,8 +103,9 @@ Used only by `00_bootstrap`.
    that Application's sync-wave comment).
 7. `argocd.tf` — installs ArgoCD (`helm_release.argocd`, the only Helm release Terraform still
    runs directly) and applies the single root `Application`
-   (`kubernetes_manifest.argocd_root_app`, decoded from `gitops/bootstrap/root.yaml`). This is
-   the entire Terraform↔ArgoCD handoff — nothing else in `gitops/` is ever referenced from here.
+   (`kubernetes_manifest.argocd_root_app`, defined inline in `argocd.tf` — keep it in sync with
+   `bootstrap/root.yaml` in the `argo-k8s-helm` repo). This is the entire Terraform↔ArgoCD
+   handoff — nothing else in that repo is ever referenced from here.
 8. `ecr.tf` — one ECR repo per `local.project_name`.
 
 **IRSA pattern**: every controller that needs AWS API access (vpc-cni, ebs-csi-driver, LB
@@ -130,10 +135,12 @@ because those are deterministic from `develop.tfvars`/`locals.tf`, not discovere
 see each file's header comment before assuming a new value needs the same manual-paste treatment
 as the ACM ARN.
 
-## Architecture — GitOps (`gitops/`)
+## Architecture — GitOps (`argo-k8s-helm` repo)
 
-Full walkthrough, rationale, and how this scales to more clusters/environments lives in
-`gitops/README.md`. Short version:
+This tree lives in a **separate repo** (github.com/Afinsky/argo-k8s-helm), checked out locally at
+`/Users/aliaksei/WORK/argo-k8s-helm`. All `repoURL`s in it point at `argo-k8s-helm.git`. Full
+walkthrough, rationale, and how this scales to more clusters/environments lives in that repo's
+`gitops/README.md`. Short version (paths are relative to that repo):
 
 ```
 gitops/bootstrap/root.yaml           the one Application Terraform applies (argocd.tf)

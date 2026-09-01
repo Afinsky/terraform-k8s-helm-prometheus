@@ -1,9 +1,0 @@
-# Read by clusters/develop/platform-appset.yaml's `files` generator, not
-# applied to the cluster itself — it's generator input, not a K8s manifest.
-# Presence of this file is what makes this directory participate in the
-# ApplicationSet fan-out; a directory without one (external-secrets/) is
-# deliberately excluded — see that Application's own header comment for why.
-chartRepoURL: https://aws.github.io/eks-charts
-chartName: aws-load-balancer-controller
-chartVersion: "3.5.0" # controller app v3.5.0 — keep in step with policies/iam-policy-aws-load-balancer-controller.json. Re-check via `helm search repo eks/aws-load-balancer-controller --versions` before bumping.
-namespace: kube-system

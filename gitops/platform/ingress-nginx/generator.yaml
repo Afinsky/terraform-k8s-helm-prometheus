@@ -1,6 +1,0 @@
-# See aws-load-balancer-controller/generator.yaml's header for what this
-# file is and how clusters/develop/platform-appset.yaml consumes it.
-chartRepoURL: https://kubernetes.github.io/ingress-nginx
-chartName: ingress-nginx
-chartVersion: "4.15.1" # controller app v1.15.1 — verified via `helm search repo ingress-nginx/ingress-nginx --versions`, re-check before bumping.
-namespace: ingress-nginx
