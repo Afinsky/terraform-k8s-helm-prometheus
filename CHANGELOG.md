@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.0.0...v1.0.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* fixed namespace issue + added redirect from http to https in ngi… ([#3](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/3)) ([c5621f7](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/c5621f78d44b210b1396d729fb30c3cec602b9c8))
+
 ## 1.0.0 (2026-08-27)
 
 
