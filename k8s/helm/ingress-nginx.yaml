@@ -3,8 +3,19 @@ controller:
   # plaintext on its "http" port even for requests that arrived over https.
   # Without this, nginx can't tell the two apart and 308-redirects https
   # traffic back to https, looping.
+  #
+  # http->https redirect is done at the NLB-listener level instead (nginx can't
+  # see the original scheme): the NLB :80 listener targets nginx port 2443, whose
+  # only job is the 308 below; the NLB :443 listener targets the plaintext "http"
+  # port. See service.targetPorts. This is the ingress-nginx documented pattern
+  # for "TLS termination in AWS NLB".
   config:
     ssl-redirect: "false"
+    http-snippet: |
+      server {
+        listen 2443;
+        return 308 https://$host$request_uri;
+      }
   replicaCount: 2
   minAvailable: 1
   resources:
@@ -42,6 +53,12 @@ controller:
       service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: 'true'
       service.beta.kubernetes.io/aws-load-balancer-ssl-ports: https
       service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: 'ELBSecurityPolicy-TLS13-1-2-2021-06'
+    # NLB :80  -> nginx :2443 (http-snippet above) = unconditional 308 to https
+    # NLB :443 -> nginx "http" port                = plaintext app traffic
+    #                                                (TLS already terminated on the NLB)
+    # 2443 is a bare numeric targetPort on purpose: a *named* targetPort would
+    # need a matching containerPort on the controller pod, which the chart does
+    # not declare for this listener.
     targetPorts:
-      http: http
+      http: 2443
       https: http
