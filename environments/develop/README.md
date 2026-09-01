@@ -78,4 +78,5 @@
 | <a name="output_cluster_version"></a> [cluster\_version](#output\_cluster\_version) | The version of Kubernetes running on the EKS cluster. |
 | <a name="output_oidc_provider"></a> [oidc\_provider](#output\_oidc\_provider) | The OpenID Connect identity provider (issuer URL without leading `https://`). |
 | <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | The ARN of the OIDC Provider for the EKS cluster. |
+| <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | ID of the VPC. Paste into<br/>gitops/platform/aws-load-balancer-controller/values-develop.yaml's<br/>`vpcId` after first apply (same manual-paste rationale as<br/>acm\_certificate\_arn — AWS assigns it, gitops/ can't read it, and the<br/>controller otherwise needs IMDS which the node hop limit blocks).<br/>Stable unless the VPC is recreated. |
 <!-- END_TF_DOCS -->

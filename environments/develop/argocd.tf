@@ -82,7 +82,7 @@ locals {
   YAML
   )
 }
-
+# NOTE: API did not recognize GroupVersionKind from manifest (CRD may not be installed), so this resource is commented out. It is still applied by ArgoCD, which does recognize the CRD.
 resource "kubernetes_manifest" "argocd_root_app" {
   manifest = local.argocd_root_app_manifest
 

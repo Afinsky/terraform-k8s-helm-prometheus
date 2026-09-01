@@ -1,3 +1,15 @@
+output "vpc_id" {
+  value       = module.vpc.vpc_id
+  description = <<-EOT
+    ID of the VPC. Paste into
+    gitops/platform/aws-load-balancer-controller/values-develop.yaml's
+    `vpcId` after first apply (same manual-paste rationale as
+    acm_certificate_arn — AWS assigns it, gitops/ can't read it, and the
+    controller otherwise needs IMDS which the node hop limit blocks).
+    Stable unless the VPC is recreated.
+  EOT
+}
+
 output "cluster_name" {
   value       = module.eks.cluster_name
   description = "The name of the created EKS cluster."
