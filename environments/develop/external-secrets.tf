@@ -98,24 +98,24 @@ resource "helm_release" "external_secrets" {
   depends_on = [module.eks, aws_iam_role_policy_attachment.external_secrets, helm_release.aws_load_balancer_controller]
 }
 
-# # ClusterSecretStore, applied the same way app.tf applies app.yaml: decode
-# # raw YAML from k8s/manifests/ rather than hand-writing a kubernetes_manifest
-# # block. Cluster-scoped (vs. namespaced SecretStore) so any namespace's
-# # ExternalSecret can reference it by name.
-# locals {
-#   external_secrets_manifest = provider::kubernetes::manifest_decode_multi(
-#     templatefile("${path.module}/../../k8s/manifests/external-secrets.yaml", {
-#       region = var.region
-#     })
-#   )
-# }
-#
-# resource "kubernetes_manifest" "external_secrets_cluster_store" {
-#   count    = length(local.external_secrets_manifest)
-#   manifest = local.external_secrets_manifest[count.index]
-#
-#   # The ClusterSecretStore CRD only exists once the chart's CRDs are
-#   # installed, and the ServiceAccount it references (external-secrets) must
-#   # already exist with its IRSA annotation.
-#   depends_on = [module.eks, helm_release.external_secrets]
-# }
+# ClusterSecretStore, applied the same way app.tf applies app.yaml: decode
+# raw YAML from k8s/manifests/ rather than hand-writing a kubernetes_manifest
+# block. Cluster-scoped (vs. namespaced SecretStore) so any namespace's
+# ExternalSecret can reference it by name.
+locals {
+  external_secrets_manifest = provider::kubernetes::manifest_decode_multi(
+    templatefile("${path.module}/../../k8s/manifests/external-secrets.yaml", {
+      region = var.region
+    })
+  )
+}
+
+resource "kubernetes_manifest" "external_secrets_cluster_store" {
+  count    = length(local.external_secrets_manifest)
+  manifest = local.external_secrets_manifest[count.index]
+
+  # The ClusterSecretStore CRD only exists once the chart's CRDs are
+  # installed, and the ServiceAccount it references (external-secrets) must
+  # already exist with its IRSA annotation.
+  depends_on = [module.eks, helm_release.external_secrets]
+}
