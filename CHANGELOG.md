@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.1.0...v1.1.1) (2026-09-11)
+
+
+### Bug Fixes
+
+* Feat/OIDC 2 ([#5](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/5)) ([40fd0b4](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/40fd0b4d32b1f75ca8ab60caa561c8c785779b18))
+
 ## [1.1.0](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.0.1...v1.1.0) (2026-09-11)
 
 ## [1.0.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.0.0...v1.0.1) (2026-09-01)
