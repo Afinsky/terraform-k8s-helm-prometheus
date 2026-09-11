@@ -70,62 +70,32 @@ locals {
   }
 }
 
-# --- Namespaces standing in for "environments" ---
-resource "kubernetes_namespace_v1" "payments_dev" {
-  metadata {
-    name = "payments-dev"
-  }
+# Namespaces standing in for "environments", and the RBAC RoleBindings that
+# pair with the SSO access entries above. Same decode-and-apply pattern as
+# app.tf/online-boutique.tf: raw YAML lives in k8s/manifests/, don't
+# hand-write kubernetes_manifest blocks for it. Split into two files/
+# resources (rather than one) so the depends_on below can guarantee the
+# namespaces exist before Kubernetes tries to create RoleBindings inside
+# them - kubernetes_manifest gives no ordering between count instances of
+# the same resource on its own.
+locals {
+  eks_access_lab_namespaces_raw_yaml = file("${path.module}/../../k8s/manifests/eks-access-lab-namespaces.yaml")
+  eks_access_lab_namespaces          = provider::kubernetes::manifest_decode_multi(local.eks_access_lab_namespaces_raw_yaml)
+
+  eks_access_lab_rolebindings_raw_yaml = file("${path.module}/../../k8s/manifests/eks-access-lab-rolebindings.yaml")
+  eks_access_lab_rolebindings          = provider::kubernetes::manifest_decode_multi(local.eks_access_lab_rolebindings_raw_yaml)
+}
+
+resource "kubernetes_manifest" "eks_access_lab_namespaces" {
+  count    = length(local.eks_access_lab_namespaces)
+  manifest = local.eks_access_lab_namespaces[count.index]
+
   depends_on = [module.eks]
 }
 
-resource "kubernetes_namespace_v1" "payments_prod" {
-  metadata {
-    name = "payments-prod"
-  }
-  depends_on = [module.eks]
-}
+resource "kubernetes_manifest" "eks_access_lab_rolebindings" {
+  count    = length(local.eks_access_lab_rolebindings)
+  manifest = local.eks_access_lab_rolebindings[count.index]
 
-resource "kubernetes_namespace_v1" "search_dev" {
-  metadata {
-    name = "search-dev"
-  }
-  depends_on = [module.eks]
-}
-
-# alice: view only in payments-prod, no Secrets - the built-in "view"
-# ClusterRole excludes them, unlike "edit" (which is why payments-dev and
-# payments-prod use different access levels).
-resource "kubernetes_role_binding_v1" "payments_devs_view_prod" {
-  metadata {
-    name      = "payments-devs-view"
-    namespace = kubernetes_namespace_v1.payments_prod.metadata[0].name
-  }
-  subject {
-    kind      = "Group"
-    name      = "payments-devs"
-    api_group = "rbac.authorization.k8s.io"
-  }
-  role_ref {
-    kind      = "ClusterRole"
-    name      = "view"
-    api_group = "rbac.authorization.k8s.io"
-  }
-}
-
-# bob: full edit rights in search-dev.
-resource "kubernetes_role_binding_v1" "search_devs_edit" {
-  metadata {
-    name      = "search-devs-edit"
-    namespace = kubernetes_namespace_v1.search_dev.metadata[0].name
-  }
-  subject {
-    kind      = "Group"
-    name      = "search-devs"
-    api_group = "rbac.authorization.k8s.io"
-  }
-  role_ref {
-    kind      = "ClusterRole"
-    name      = "edit"
-    api_group = "rbac.authorization.k8s.io"
-  }
+  depends_on = [kubernetes_manifest.eks_access_lab_namespaces]
 }
