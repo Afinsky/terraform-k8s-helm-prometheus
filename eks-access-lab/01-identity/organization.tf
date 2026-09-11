@@ -1,14 +1,14 @@
-# AWS Organizations — единственная зависимость, без которой Identity Center
-# не сможет выдавать роли в AWS-аккаунты (режим "account instance" этого
-# не умеет вообще). Применяется первым, отдельно:
+# AWS Organizations — the only dependency without which Identity Center
+# can't grant roles into AWS accounts ("account instance" mode can't do
+# this at all). Applied first, on its own:
 #   terraform apply -target=aws_organizations_organization.this
 resource "aws_organizations_organization" "this" {
   feature_set = "ALL"
 
-  # AWS сама прописывает sso.amazonaws.com в trusted access при
-  # "Enable IAM Identity Center → Enable with AWS Organizations".
-  # Если не объявить это здесь явно, Terraform на следующем apply
-  # попытается убрать этот principal и отвяжет Identity Center
-  # от организации.
+  # AWS itself registers sso.amazonaws.com as trusted access when you
+  # "Enable IAM Identity Center → Enable with AWS Organizations". If we
+  # don't declare it here explicitly, Terraform will try to remove this
+  # principal on the next apply and unlink Identity Center from the
+  # organization.
   aws_service_access_principals = ["sso.amazonaws.com"]
 }

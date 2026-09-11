@@ -4,7 +4,7 @@ locals {
 }
 
 # ============================================================
-# Группы и пользователи (в реальной компании приезжали бы из Okta по SCIM)
+# Groups and users (in a real company these would arrive from Okta via SCIM)
 # ============================================================
 resource "aws_identitystore_group" "groups" {
   for_each          = local.groups
@@ -38,14 +38,14 @@ resource "aws_identitystore_group_membership" "users" {
 }
 
 # ------------------------------------------------------------------
-# У identitystore нет API/ресурса, чтобы задать пароль созданному
-# пользователю (то самое "Generate one-time password" из консоли).
-# После apply: Identity Center → User → Reset password → Generate
-# one-time password для каждого из трёх юзеров.
+# identitystore has no API/resource to set a password for a created user
+# (that's the console's "Generate one-time password"). After apply:
+# Identity Center → User → Reset password → Generate one-time password
+# for each of the three users.
 # ------------------------------------------------------------------
 
 # ============================================================
-# PlatformAdmin — твой доступ, AdministratorAccess на весь аккаунт
+# PlatformAdmin — your access, AdministratorAccess on the whole account
 # ============================================================
 resource "aws_ssoadmin_permission_set" "platform_admin" {
   name             = "PlatformAdmin"
@@ -72,16 +72,16 @@ resource "aws_ssoadmin_account_assignment" "platform_admin" {
 }
 
 # ============================================================
-# EKSDev-Payments / EKSDev-Search — минимальная IAM-политика:
-# только узнать, что кластер существует и где он.
-# Это НЕ даёт никаких прав внутри Kubernetes — то отдельно, в access entries
-# (Фаза 3, стек 02-cluster).
+# EKSDev-Payments / EKSDev-Search — minimal IAM policy: only enough to
+# find out that the cluster exists and where it is.
+# This grants NO rights inside Kubernetes — that's separate, via access
+# entries (Phase 3, the 02-cluster stack).
 # ============================================================
 resource "aws_ssoadmin_permission_set" "eks_dev" {
   for_each         = local.teams
   name             = each.value.permission_set
   instance_arn     = local.instance_arn
-  session_duration = "PT1H" # 1 час. Коротко специально, пригодится в Фазе 7
+  session_duration = "PT1H" # 1 hour. Deliberately short, comes in handy in Phase 7
   tags             = local.common_tags
 }
 
@@ -100,8 +100,9 @@ resource "aws_ssoadmin_permission_set_inline_policy" "eks_dev" {
   })
 }
 
-# Назначение: "группа X может входить в аккаунт Y с permission set Z".
-# В этот момент в аккаунте появляется роль AWSReservedSSO_EKSDev-..._<хвост>
+# Assignment: "group X can sign into account Y with permission set Z".
+# This is the point where the role AWSReservedSSO_EKSDev-..._<suffix>
+# appears in the account.
 resource "aws_ssoadmin_account_assignment" "eks_dev" {
   for_each           = local.teams
   instance_arn       = local.instance_arn

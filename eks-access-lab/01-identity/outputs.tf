@@ -1,14 +1,14 @@
 output "sso_instance_arn" {
   value       = local.instance_arn
-  description = "ARN инстанса IAM Identity Center."
+  description = "ARN of the IAM Identity Center instance."
 }
 
 output "identity_store_id" {
   value       = local.identity_store_id
-  description = "ID identity store, используется стеком 02-cluster."
+  description = "Identity store ID, used by the 02-cluster stack."
 }
 
 output "user_emails" {
   value       = { for k, v in local.users : k => v.email }
-  description = "Email-алиасы созданных пользователей (все письма приходят на var.email)."
+  description = "Email aliases of the created users (all mail lands on var.email)."
 }

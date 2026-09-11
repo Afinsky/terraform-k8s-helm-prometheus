@@ -26,9 +26,9 @@ locals {
     bob      = { given_name = "Bob", family_name = "Search", email = local.alias_email.bob, group = "search-devs" }
   }
 
-  # Одна команда = одна группа = один permission set = одна IAM-роль.
-  # Имена permission set-ов фиксированные (не через resource_name-префикс):
-  # в Фазе 3 (02-cluster) их находят по regex "AWSReservedSSO_EKSDev-...".
+  # One team = one group = one permission set = one IAM role.
+  # Permission set names are fixed (not resource_name-prefixed):
+  # Phase 3 (02-cluster) looks them up by the regex "AWSReservedSSO_EKSDev-...".
   teams = {
     payments = { group = "payments-devs", permission_set = "EKSDev-Payments" }
     search   = { group = "search-devs", permission_set = "EKSDev-Search" }

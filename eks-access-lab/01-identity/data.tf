@@ -1,10 +1,10 @@
 data "aws_caller_identity" "current" {}
 
 # ------------------------------------------------------------------
-# Между apply #1 (organization.tf) и apply #2 (этот data-источник)
-# нужен ручной шаг: включить IAM Identity Center в консоли. У провайдера
-# AWS нет ресурса, который включает Identity Center как organization
-# instance, поэтому этот data-источник иначе просто ничего не найдёт.
-# См. README.md.
+# Between apply #1 (organization.tf) and apply #2 (this data source)
+# a manual step is required: enable IAM Identity Center in the console.
+# The AWS provider has no resource that enables Identity Center as an
+# organization instance, so this data source would otherwise find nothing.
+# See README.md.
 # ------------------------------------------------------------------
 data "aws_ssoadmin_instances" "this" {}
