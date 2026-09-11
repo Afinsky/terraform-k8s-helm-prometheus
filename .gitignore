@@ -5,3 +5,4 @@
 **/*.tfstate*
 **/secure_variables.tfvars
 docs/
+.pre-commit-trivy-cache/**

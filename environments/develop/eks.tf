@@ -41,6 +41,16 @@ module "eks" {
       capacity_type  = "SPOT"
       disk_size      = 60
       ebs_optimized  = true
+
+      # EKS managed node groups default the IMDS hop limit to 1, which stops
+      # pods (one extra network hop) from reaching instance metadata. Raise
+      # to 2 so controllers that fall back to IMDS work. Tokens still
+      # required (IMDSv2).
+      metadata_options = {
+        http_endpoint               = "enabled"
+        http_tokens                 = "required"
+        http_put_response_hop_limit = 2
+      }
       iam_role_additional_policies = {
         ssm_access        = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
         cloudwatch_access = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"

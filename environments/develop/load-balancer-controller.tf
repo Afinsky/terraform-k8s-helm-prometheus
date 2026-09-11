@@ -52,49 +52,24 @@ resource "aws_iam_role_policy_attachment" "lb_controller" {
   policy_arn = aws_iam_policy.lb_controller.arn
 }
 
-resource "helm_release" "aws_load_balancer_controller" {
-  name             = "aws-load-balancer-controller"
-  repository       = "https://aws.github.io/eks-charts"
-  chart            = "aws-load-balancer-controller"
-  namespace        = "kube-system"
-  create_namespace = false
-  version          = "3.5.0" # controller app version v3.5.0 - keep in step with the IAM policies JSON above.
-  # Verified live via `helm search repo eks/aws-load-balancer-controller --versions`
-  # on 2026-08-11. Chart versioning realigned with the app version at v3.0.0
-  # (previously chart 1.x shipped app v2.x); v3.0.0's only behavioral change
-  # relevant here is Gateway API reaching GA (opt-in, unused in this config) -
-  # no new required IAM permissions, and it needs Kubernetes 1.22+ (cluster
-  # runs 1.36). Re-run that helm search before every future version bump.
-
-  set = [
-    {
-      name  = "clusterName"
-      value = module.eks.cluster_name
-    },
-    {
-      name  = "region"
-      value = var.region
-    },
-    {
-      name  = "vpcId"
-      value = module.vpc.vpc_id
-    },
-    {
-      name  = "serviceAccount.create"
-      value = "true"
-    },
-    {
-      name  = "serviceAccount.name"
-      value = "aws-load-balancer-controller"
-    },
-    {
-      name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-      value = aws_iam_role.lb_controller.arn
-      type  = "string"
+# The Helm release itself moved to ArgoCD (gitops/platform/aws-load-balancer-controller/).
+# Terraform's job ends here: create the ServiceAccount with its IRSA
+# annotation already attached, so the chart (deployed with
+# serviceAccount.create=false) never needs to know the role ARN. clusterName
+# and region in the chart's values are plain literals in gitops/ instead of
+# Terraform `set` values - both are deterministic from develop.tfvars, not
+# discovered at apply time. vpcId is left unset in values on purpose: the
+# controller auto-discovers it from the node's EC2 instance metadata, which
+# avoids needing a second Terraform-computed literal (the VPC ID isn't
+# predictable the way clusterName/region are).
+resource "kubernetes_service_account_v1" "lb_controller" {
+  metadata {
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.lb_controller.arn
     }
-  ]
+  }
 
-  # Same access-entry ordering constraint as the ingress-nginx release: the
-  # helm provider must be able to reach the API server as an admin principal.
-  depends_on = [module.eks, module.vpc, aws_iam_role_policy_attachment.lb_controller]
+  depends_on = [module.eks, aws_iam_role_policy_attachment.lb_controller]
 }
