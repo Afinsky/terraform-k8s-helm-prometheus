@@ -1,6 +1,9 @@
 profile     = "terraform"
 environment = "dev"
 region      = "us-east-1"
+# PLAT-101 Phase 3: EKS public API endpoint is restricted to this IP.
+# Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com
+my_ip_cidr = "83.175.181.227/32"
 
 vpc = {
   homelab = {

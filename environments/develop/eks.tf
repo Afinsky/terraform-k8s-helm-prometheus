@@ -4,9 +4,13 @@ module "eks" {
 
   name                                   = "${local.resource_name}-k8s-cluster"
   kubernetes_version                     = "1.36"
-  enabled_log_types                      = ["audit"]
+  enabled_log_types                      = ["api", "audit", "authenticator"] # audit -> who did what (PLAT-101 Phase 6); authenticator -> who tried to log in
   cloudwatch_log_group_retention_in_days = 30
   endpoint_public_access                 = true
+  endpoint_public_access_cidrs           = [var.my_ip_cidr]
+
+  # Access entries only, no aws-auth ConfigMap (PLAT-101 Phase 3).
+  authentication_mode = "API"
 
   addons = {
     coredns = {
@@ -50,10 +54,27 @@ module "eks" {
     }
   }
 
-  enable_cluster_creator_admin_permissions = true
+  # false on purpose (PLAT-101 Q7): true grants the identity Terraform runs
+  # as an invisible admin access entry that never shows up in
+  # `aws eks list-access-entries`. Made it explicit below ("terraform" entry)
+  # instead - every helm_release/kubernetes_manifest resource in this
+  # environment authenticates as that same identity and needs it.
+  enable_cluster_creator_admin_permissions = false
 
   access_entries = merge(
     {
+      "terraform" = {
+        kubernetes_groups = []
+        principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/Terraform"
+        policy_associations = {
+          admin = {
+            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+            access_scope = {
+              type = "cluster"
+            }
+          }
+        }
+      }
       "aliaksei" = {
         kubernetes_groups = [] # Added for consistency with the other access entries, but not strictly necessary for this entry
         principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/aliaksei"
@@ -80,7 +101,10 @@ module "eks" {
           }
         }
       }
-    }
+    },
+    # PLAT-101 Phase 3: SSO roles from the eks-access-lab/01-identity stack.
+    # See eks-access-lab.tf.
+    local.lab_access_entries
   )
 
   tags = local.common_tags

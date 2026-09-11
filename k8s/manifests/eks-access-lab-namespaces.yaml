@@ -1,0 +1,18 @@
+# PLAT-101 lab, Phase 3: namespaces standing in for separate "environments"
+# (payments-dev/payments-prod play dev/prod, search-dev plays a second team).
+# Applied by environments/develop/eks-access-lab.tf, before the RoleBindings
+# in eks-access-lab-rolebindings.yaml.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payments-dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: payments-prod
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: search-dev
