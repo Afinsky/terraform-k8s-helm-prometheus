@@ -6,7 +6,7 @@
 # own infrastructure to be meaningful.
 #
 # Identity side (groups/users/permission sets) lives in a separate Terraform
-# stack: eks-access-lab/01-identity. This file only consumes what it
+# stack: eks-access-lab/01-identity-center. This file only consumes what it
 # creates, by looking up the resulting IAM roles - no remote state, no
 # hardcoded ARNs.
 

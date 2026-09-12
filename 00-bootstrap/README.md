@@ -16,7 +16,7 @@ No providers.
 
 | Name | Source | Version |
 | ---- | ------ | ------- |
-| <a name="module_backend"></a> [backend](#module\_backend) | ./../../../modules/backend | n/a |
+| <a name="module_backend"></a> [backend](#module\_backend) | ../modules/backend | n/a |
 
 ## Resources
 

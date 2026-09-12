@@ -3,7 +3,7 @@
 Terraform stack for Phase 1 + Phase 2 of the PLAT-101 lab. Creates the AWS
 Organization, groups, users, group memberships, and all permission
 sets/assignments. Structure and backend pattern match
-[`environments/develop`](../../environments/develop): S3 backend with
+[`environments/develop`](../environments/develop): S3 backend with
 partial config via a `.conf` file, variables via `.tfvars`.
 
 Terraform can't handle only the things the `hashicorp/aws` provider has no

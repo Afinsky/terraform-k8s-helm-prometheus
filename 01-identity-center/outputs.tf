@@ -12,3 +12,8 @@ output "user_emails" {
   value       = { for k, v in local.users : k => v.email }
   description = "Email aliases of the created users (all mail lands on var.email)."
 }
+
+output "account_ids" {
+  value       = { for k, v in aws_organizations_account.this : k => v.id }
+  description = "AWS account IDs of accounts created by this stack."
+}

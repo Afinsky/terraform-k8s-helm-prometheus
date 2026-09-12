@@ -23,7 +23,7 @@ provider "aws" {
 }
 
 module "backend" {
-  source = "./../../../modules/backend"
+  source = "../modules/backend"
 
   name_terrafrom_state_s3              = "${local.resource_name}-terraform-state"
   versioning                           = { status = true }

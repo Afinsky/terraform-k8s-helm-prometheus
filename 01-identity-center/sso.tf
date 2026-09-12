@@ -104,7 +104,8 @@ resource "aws_ssoadmin_permission_set_inline_policy" "eks_dev" {
 # This is the point where the role AWSReservedSSO_EKSDev-..._<suffix>
 # appears in the account.
 resource "aws_ssoadmin_account_assignment" "eks_dev" {
-  for_each           = local.teams
+  for_each = local.teams
+
   instance_arn       = local.instance_arn
   permission_set_arn = aws_ssoadmin_permission_set.eks_dev[each.key].arn
   principal_type     = "GROUP"

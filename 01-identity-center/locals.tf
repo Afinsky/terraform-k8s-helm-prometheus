@@ -30,7 +30,14 @@ locals {
   # Permission set names are fixed (not resource_name-prefixed):
   # Phase 3 (02-cluster) looks them up by the regex "AWSReservedSSO_EKSDev-...".
   teams = {
-    payments = { group = "payments-devs", permission_set = "EKSDev-Payments" }
-    search   = { group = "search-devs", permission_set = "EKSDev-Search" }
+    payments = {
+      group          = "payments-devs",
+      permission_set = "EKSDev-Payments"
+    }
+
+    search = {
+      group          = "search-devs",
+      permission_set = "EKSDev-Search"
+    }
   }
 }
