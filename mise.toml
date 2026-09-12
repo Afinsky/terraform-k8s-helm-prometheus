@@ -1,0 +1,76 @@
+# mise — single source of truth for the CLI tools this repo needs.
+#
+#   mise install         # install everything below
+#   mise ls              # what's active
+#   mise run pre-commit  # see [tasks] at the bottom
+#
+# Two toolchains live here (see CLAUDE.md): Terraform (via Terragrunt) in
+# accounts/abotyan001/us-east-1/, and the gitops/ tree that ArgoCD reconciles.
+# Both sets are listed.
+
+[tools]
+# --- Terraform side --------------------------------------------------------
+# versions.tf pins `required_version >= 1.3.2`; this is what's used day to day.
+terraform      = "1.15"
+# pre-commit hook `terraform_tflint` + accounts/abotyan001/us-east-1/develop/.tflint.hcl
+tflint         = "0.64"
+# pre-commit hook `terraform_docs`; regenerates each module's README.md
+# between the BEGIN_TF_DOCS/END_TF_DOCS markers (.terraform-docs.yml)
+terraform-docs = "0.24"
+# pre-commit hook `terragrunt-hcl-fmt` (gruntwork-io/pre-commit)
+terragrunt     = "1.0"
+
+# --- GitOps side ----------------------------------------------------------
+# `helm template` / `helm search repo` sanity checks before pushing to gitops/.
+# (Terraform's helm provider pulls charts on its own, but the CLI is used for
+# local rendering and version lookups.)
+helm      = "4.2"
+# `aws eks update-kubeconfig` (make update-context), kubectl port-forward to
+# the ArgoCD UI, general cluster debugging.
+kubectl   = "1.34"
+# `kustomize build` sanity checks for gitops/apps/* overlays (CLAUDE.md).
+kustomize = "5.7"
+
+# --- Shared -------------------------------------------------------------------
+# AWS auth for every terraform command (provider.tf reads ~/.aws/*, profile
+# `terraform`) and for `aws eks update-kubeconfig`.
+awscli     = "2"
+# Hook runner for .pre-commit-config.yaml (`make pre-commit`).
+pre-commit = "4"
+# Runtime for pre-commit itself and its Python-based hooks
+# (conventional-pre-commit, pre-commit-hooks).
+python     = "3.12"
+
+# Not managed here on purpose:
+#  - node / semantic-release      -> CI only (.github/workflows/release.yaml)
+#  - trivy                        -> pre-commit trivy hooks are commented out and
+#                                    run via Docker (trivyfs-docker / trivyconfig-docker),
+#                                    not a local binary. Add `trivy = "latest"` +
+#                                    uncomment those hooks if you want them local.
+#  - the S3 state backend         -> bootstrapped once via accounts/abotyan001/us-east-1/00-bootstrap
+
+[env]
+# Keeps `terraform`/`aws` from needing -chdir juggling if you cd around; the
+# Makefile already passes -chdir explicitly, this is just for ad-hoc use.
+TF_VAR_FILE = "develop.tfvars"
+
+[tasks.pre-commit]
+description = "Run all pre-commit hooks"
+run = "pre-commit run --all-files"
+
+[tasks.context]
+description = "Point kubeconfig at the develop cluster"
+run = "aws eks update-kubeconfig --name dev-me-k8s-cluster --region us-east-1 --profile terraform"
+
+[tasks.docs]
+description = "Regenerate accounts/abotyan001/us-east-1/develop/README.md"
+run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject accounts/abotyan001/us-east-1/develop"
+
+[tasks.validate]
+description = "fmt check + validate + tflint on the develop root module"
+dir = "{{ config_root }}/accounts/abotyan001/us-east-1/develop"
+run = [
+  "terraform fmt -check -recursive",
+  "terraform validate",
+  "tflint --call-module-type=all --config=.tflint.hcl",
+]

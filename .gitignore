@@ -5,3 +5,7 @@
 **/*.tfstate*
 **/secure_variables.tfvars
 docs/
+
+#Terragrunt
+**/.terragrunt-cache
+**/backend.tf
