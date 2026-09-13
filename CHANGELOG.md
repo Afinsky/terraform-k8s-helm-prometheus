@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.1.1...v1.2.0) (2026-09-13)
+
 ## [1.1.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.1.0...v1.1.1) (2026-09-11)
 
 
