@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.0...v1.2.1) (2026-09-13)
+
+
+### Bug Fixes
+
+* reorganize using Terragrunt - remove unused bootstrap, instead use native terragrunt bootstrap ([1761daa](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/1761daa14e6baf84d044bbe84072526b07d07bf6))
+
 ## [1.2.0](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.1.1...v1.2.0) (2026-09-13)
 
 ## [1.1.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.1.0...v1.1.1) (2026-09-11)
