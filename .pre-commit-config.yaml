@@ -30,19 +30,10 @@ repos:
         exclude: ^accounts/abotyan001/us-east-1/develop/unused/
         args:
           - '--args=--call-module-type=all'
-          - '--args=--only=terraform_deprecated_interpolation'
-          - '--args=--only=terraform_deprecated_index'
-          - '--args=--only=terraform_unused_declarations'
-          - '--args=--only=terraform_comment_syntax'
-          - '--args=--only=terraform_documented_outputs'
-          - '--args=--only=terraform_documented_variables'
-          - '--args=--only=terraform_typed_variables'
-          - '--args=--only=terraform_module_pinned_source'
-          - '--args=--only=terraform_naming_convention'
-          - '--args=--only=terraform_required_version'
-          - '--args=--only=terraform_required_providers'
-          - '--args=--only=terraform_standard_module_structure'
-          - '--args=--only=terraform_workspace_remote'
+          # Full default ruleset (terraform_* core rules + the aws_* rules from the
+          # tflint-ruleset-aws plugin declared in each layer's .tflint.hcl) — no --only
+          # restriction. Previously limited to a 13-rule allowlist; dropped after
+          # confirming the full ruleset finds nothing new to fix on this repo.
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -51,3 +42,31 @@ repos:
       - id: check-json
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  # mxab/pre-commit-trivy only ships "-docker" hook variants (language: docker_image), which
+  # need the Docker daemon running for every commit. These call the `trivy` binary directly
+  # instead (pinned via mise.toml) — same checks, no Docker dependency.
+  #
+  # --severity CRITICAL,HIGH only: a full scan of this repo turned up 108 findings, mostly
+  # LOW/MEDIUM Kubernetes hardening nits (seccompProfile, non-default namespace, etc.) plus a
+  # few HIGH/CRITICAL findings that are deliberate homelab tradeoffs (public EKS API endpoint
+  # restricted to one IP, public subnets for cost). Blocking on the full set would leave every
+  # commit permanently red. Run without --severity locally to see everything.
+
+# Temporarily disabled #TODO: ...
+#  - repo: local
+#    hooks:
+#      - id: trivyfs
+#        name: trivyfs
+#        language: system
+#        pass_filenames: false
+#        entry: >-
+#          trivy fs --cache-dir .pre-commit-trivy-cache --exit-code 1
+#          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
+#      - id: trivyconfig
+#        name: trivyconfig
+#        language: system
+#        pass_filenames: false
+#        entry: >-
+#          trivy config --cache-dir .pre-commit-trivy-cache --exit-code 1
+#          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .

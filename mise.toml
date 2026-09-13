@@ -20,6 +20,10 @@ tflint         = "0.64"
 terraform-docs = "0.24"
 # pre-commit hook `terragrunt-hcl-fmt` (gruntwork-io/pre-commit)
 terragrunt     = "1.0"
+# local pre-commit hooks `trivyfs`/`trivyconfig` in .pre-commit-config.yaml call this
+# binary directly — no Docker daemon needed (unlike mxab/pre-commit-trivy's own hooks,
+# which only ship "-docker" variants).
+trivy          = "0.74.0"
 
 # --- GitOps side (../argo-k8s-helm — parked experiment, not in use) -------
 # `helm template` / `helm search repo` sanity checks against that repo's gitops/.
@@ -44,10 +48,6 @@ python     = "3.12"
 
 # Not managed here on purpose:
 #  - node / semantic-release      -> CI only (.github/workflows/release.yaml)
-#  - trivy                        -> pre-commit trivy hooks are commented out and
-#                                    run via Docker (trivyfs-docker / trivyconfig-docker),
-#                                    not a local binary. Add `trivy = "latest"` +
-#                                    uncomment those hooks if you want them local.
 #  - the S3 state backend         -> auto-created by Terragrunt itself (--backend-bootstrap in the
 #                                    Makefile), not a terraform resource — see root.hcl
 

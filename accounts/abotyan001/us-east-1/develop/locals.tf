@@ -53,7 +53,7 @@ locals {
         }
         } : [
         for s in v.user_arn : {
-          username = s, access_policy = lookup(local.eks_access_policy, k), group = k
+          username = s, access_policy = local.eks_access_policy[k], group = k
         }
       ]
     ]
