@@ -5,8 +5,9 @@
 #   mise run pre-commit  # see [tasks] at the bottom
 #
 # Two toolchains live here (see CLAUDE.md): Terraform (via Terragrunt) in
-# accounts/abotyan001/us-east-1/, and the gitops/ tree that ArgoCD reconciles.
-# Both sets are listed.
+# accounts/abotyan001/us-east-1/ — this is what actually manages the live
+# cluster — and the CLI tools for the sibling `../argo-k8s-helm` repo, a
+# parked ArgoCD/GitOps experiment that isn't in use. Both sets are listed.
 
 [tools]
 # --- Terraform side --------------------------------------------------------
@@ -20,15 +21,15 @@ terraform-docs = "0.24"
 # pre-commit hook `terragrunt-hcl-fmt` (gruntwork-io/pre-commit)
 terragrunt     = "1.0"
 
-# --- GitOps side ----------------------------------------------------------
-# `helm template` / `helm search repo` sanity checks before pushing to gitops/.
-# (Terraform's helm provider pulls charts on its own, but the CLI is used for
-# local rendering and version lookups.)
+# --- GitOps side (../argo-k8s-helm — parked experiment, not in use) -------
+# `helm template` / `helm search repo` sanity checks against that repo's gitops/.
+# (Terraform's helm provider pulls charts on its own here, but the CLI is used
+# for local rendering and version lookups.)
 helm      = "4.2"
-# `aws eks update-kubeconfig` (make update-context), kubectl port-forward to
-# the ArgoCD UI, general cluster debugging.
+# `aws eks update-kubeconfig` (make update-context), kubectl port-forward,
+# general cluster debugging.
 kubectl   = "1.34"
-# `kustomize build` sanity checks for gitops/apps/* overlays (CLAUDE.md).
+# `kustomize build` sanity checks for ../argo-k8s-helm's gitops/apps/* overlays.
 kustomize = "5.7"
 
 # --- Shared -------------------------------------------------------------------
@@ -47,7 +48,8 @@ python     = "3.12"
 #                                    run via Docker (trivyfs-docker / trivyconfig-docker),
 #                                    not a local binary. Add `trivy = "latest"` +
 #                                    uncomment those hooks if you want them local.
-#  - the S3 state backend         -> bootstrapped once via accounts/abotyan001/us-east-1/00-bootstrap
+#  - the S3 state backend         -> auto-created by Terragrunt itself (--backend-bootstrap in the
+#                                    Makefile), not a terraform resource — see root.hcl
 
 [env]
 # Keeps `terraform`/`aws` from needing -chdir juggling if you cd around; the

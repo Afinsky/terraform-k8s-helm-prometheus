@@ -1,7 +1,7 @@
 # AWS Organizations — the only dependency without which Identity Center
 # can't grant roles into AWS accounts ("account instance" mode can't do
 # this at all). Applied first, on its own:
-#   terraform apply -target=aws_organizations_organization.this
+#   terragrunt apply -target=aws_organizations_organization.this
 resource "aws_organizations_organization" "this" {
   feature_set = "ALL"
 

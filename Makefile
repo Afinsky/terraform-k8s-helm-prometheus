@@ -54,11 +54,12 @@ login: ## aws sso login (lab-admin profile)
 
 # ----------------------------------------------------------------
 # Terragrunt layers
+#
+# There's no bootstrap layer for the S3 state bucket — --backend-bootstrap below makes Terragrunt
+# create it itself (versioned, encrypted, public access blocked) the first time it's missing.
+# See root.hcl's remote_state block.
 # ----------------------------------------------------------------
-.PHONY: 00-bootstrap 01-identity-center develop
-
-00-bootstrap: ## S3 state bucket (local backend — bootstraps the backend every other layer uses)
-	$(eval LAYER = $(ACCOUNT_DIR)/00-bootstrap)
+.PHONY: 01-identity-center develop
 
 01-identity-center: ## AWS Organization, IAM Identity Center users/groups/permission sets
 	$(eval LAYER = $(ACCOUNT_DIR)/01-identity-center)
@@ -73,12 +74,14 @@ develop: ## VPC, EKS, ingress-nginx, external-dns/-secrets, sample apps
 plan apply init output validate refresh import destroy force-unlock:
 	terragrunt $@ \
 		--working-dir ./$(LAYER) \
-		--non-interactive
+		--non-interactive \
+		--backend-bootstrap
 
 state-list: ## make <layer> state-list
 	terragrunt state list \
 		--working-dir ./$(LAYER) \
-		--non-interactive
+		--non-interactive \
+		--backend-bootstrap
 
 # console/providers/etc have no terragrunt shortcut — run them via `terragrunt run -- <cmd>`
 # eg make develop cmd CMD=console
@@ -86,29 +89,34 @@ cmd: ## make <layer> cmd CMD="console"
 	terragrunt run \
 		--working-dir ./$(LAYER) \
 		--non-interactive \
+		--backend-bootstrap \
 		-- $(CMD)
 
 debug-plan: ## make <layer> debug-plan
 	terragrunt plan \
 		--working-dir ./$(LAYER) \
 		--non-interactive \
+		--backend-bootstrap \
 		--log-level debug
 
 debug-apply: ## make <layer> debug-apply
 	terragrunt apply \
 		--working-dir ./$(LAYER) \
 		--non-interactive \
+		--backend-bootstrap \
 		--log-level debug
 
 run-all-plan: ## plan every layer under $(ACCOUNT_DIR)
 	terragrunt run --all plan \
 		--working-dir ./$(ACCOUNT_DIR) \
-		--non-interactive
+		--non-interactive \
+		--backend-bootstrap
 
 run-all-apply: ## apply every layer under $(ACCOUNT_DIR)
 	terragrunt run --all apply \
 		--working-dir ./$(ACCOUNT_DIR) \
-		--non-interactive
+		--non-interactive \
+		--backend-bootstrap
 
 # ----------------------------------------------------------------
 # utils
