@@ -1,2 +1,0 @@
-profile     = "terraform"
-environment = "dev"

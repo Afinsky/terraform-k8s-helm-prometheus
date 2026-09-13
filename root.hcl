@@ -5,11 +5,14 @@
 #
 # - constrain terraform/terragrunt versions
 # - consolidate global/account/region variables across terragrunt layers
-# - configure the S3 state backend (bucket already exists — created once by 00-bootstrap, not by Terragrunt)
+# - configure the S3 state backend — bucket is auto-created by Terragrunt itself (--backend-bootstrap, baked
+#   into every Makefile command). It's never a terraform resource anywhere: Terragrunt checks for it via
+#   the AWS SDK and creates it (versioned, AES256-encrypted, public access blocked) if missing, idempotently,
+#   outside of any terraform state.
 #
-# NOTE: unlike the multi-account Automata repos this is modeled on, there's no `generate "provider"` block here.
-# `develop`'s kubernetes/helm providers are wired off live `module.eks` outputs, which Terragrunt can't template
-# statically, so both `provider.tf` files stay hand-written and committed as-is.
+# NOTE: there's no `generate "provider"` block here. `develop`'s kubernetes/helm providers are wired off
+# live `module.eks` outputs, which Terragrunt can't template statically, so both `provider.tf` files stay
+# hand-written and committed as-is.
 #---------------------------------------------------------------------------------------------------------------------
 
 terraform_version_constraint  = ">= 1.3.2"
@@ -35,11 +38,12 @@ remote_state {
   backend = "s3"
 
   config = {
-    bucket       = "dev-me-terraform-state"
-    key          = local.state_vars.locals.state_key
-    region       = "us-east-1"
-    encrypt      = true
-    use_lockfile = true
+    bucket         = "dev-me-terraform-state"
+    key            = local.state_vars.locals.state_key
+    region         = "us-east-1"
+    encrypt        = true
+    use_lockfile   = true
+    s3_bucket_tags = local.common_tags
     # the state bucket is only ever read/written by the "terraform" static IAM user, regardless of which
     # profile a given stack's own provider.tf assumes for managing its resources (see 01-identity-center/provider.tf)
     profile = "terraform"
@@ -59,21 +63,3 @@ inputs = merge(
   local.account_vars.locals,
   local.region_vars.locals,
 )
-
-# ---------------------------------------------------------------------------------------------------------------------
-# clean up hook
-# ---------------------------------------------------------------------------------------------------------------------
-terraform {
-  before_hook "clean_asdf_from_modules" {
-    commands = ["init", "plan", "apply", "destroy"]
-    execute = [
-      "bash", "-c",
-      <<-EOF
-      if [ -d ${get_terragrunt_dir()}/.terragrunt-cache ]; then
-        find ${get_terragrunt_dir()}/.terragrunt-cache -type f -name .tool-versions -exec rm -f {} +
-        find ${get_terragrunt_dir()}/.terragrunt-cache -type f -name aliased-providers.tf.json -exec rm -f {} +
-      fi
-      EOF
-    ]
-  }
-}
