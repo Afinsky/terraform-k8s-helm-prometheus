@@ -9,3 +9,6 @@ docs/
 #Terragrunt
 **/.terragrunt-cache
 **/backend.tf
+
+#Trivy
+.pre-commit-trivy-cache/

@@ -51,3 +51,31 @@ repos:
       - id: check-json
       - id: end-of-file-fixer
       - id: trailing-whitespace
+
+  # mxab/pre-commit-trivy only ships "-docker" hook variants (language: docker_image), which
+  # need the Docker daemon running for every commit. These call the `trivy` binary directly
+  # instead (pinned via mise.toml) — same checks, no Docker dependency.
+  #
+  # --severity CRITICAL,HIGH only: a full scan of this repo turned up 108 findings, mostly
+  # LOW/MEDIUM Kubernetes hardening nits (seccompProfile, non-default namespace, etc.) plus a
+  # few HIGH/CRITICAL findings that are deliberate homelab tradeoffs (public EKS API endpoint
+  # restricted to one IP, public subnets for cost). Blocking on the full set would leave every
+  # commit permanently red. Run without --severity locally to see everything.
+
+# Temporarily disabled #TODO: ...
+#  - repo: local
+#    hooks:
+#      - id: trivyfs
+#        name: trivyfs
+#        language: system
+#        pass_filenames: false
+#        entry: >-
+#          trivy fs --cache-dir .pre-commit-trivy-cache --exit-code 1
+#          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
+#      - id: trivyconfig
+#        name: trivyconfig
+#        language: system
+#        pass_filenames: false
+#        entry: >-
+#          trivy config --cache-dir .pre-commit-trivy-cache --exit-code 1
+#          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
