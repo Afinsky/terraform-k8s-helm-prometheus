@@ -18,7 +18,12 @@
 # Organization — reuse the same +alias trick as local.alias_email, you
 # can't register your real address twice.
 locals {
-  accounts = {}
+  accounts = {
+    workloads-dev = {
+      name  = "workloads-dev"
+      email = "${local.email_parts[0]}+aws-workloads-dev@${local.email_parts[1]}"
+    }
+  }
 }
 
 resource "aws_organizations_account" "this" {

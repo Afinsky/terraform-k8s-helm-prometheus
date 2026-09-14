@@ -29,6 +29,19 @@ locals {
 
   project_name = local.global_vars.locals.project_name
   common_tags  = local.global_vars.locals.common_tags
+
+  # State lives in the SAME account this account.hcl describes — abotyan001's own state stays in its
+  # historical central bucket, read directly as the "terraform" static IAM user (no override needed
+  # there). A member account vended by 01-identity-center/accounts.tf gets its own bucket, created
+  # inside itself: its account.hcl sets state_profile to "terraform-management" (a chained ~/.aws/config
+  # profile: terraform-management assumed from terraform) and state_role_arn to that account's
+  # terraform-target — the role account_access_stackset.tf auto-deploys into every member account,
+  # trusting only terraform-management. That single extra assume-role hop is also what lets
+  # `--backend-bootstrap` create the bucket itself inside the member account on first apply — no separate
+  # bootstrap stack for it either.
+  state_bucket   = try(local.account_vars.locals.state_bucket, "dev-me-terraform-state")
+  state_profile  = try(local.account_vars.locals.state_profile, "terraform")
+  state_role_arn = try(local.account_vars.locals.state_role_arn, null)
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -37,17 +50,22 @@ locals {
 remote_state {
   backend = "s3"
 
-  config = {
-    bucket         = "dev-me-terraform-state"
-    key            = local.state_vars.locals.state_key
-    region         = "us-east-1"
-    encrypt        = true
-    use_lockfile   = true
-    s3_bucket_tags = local.common_tags
-    # the state bucket is only ever read/written by the "terraform" static IAM user, regardless of which
-    # profile a given stack's own provider.tf assumes for managing its resources (see 01-identity-center/provider.tf)
-    profile = "terraform"
-  }
+  config = merge(
+    {
+      bucket         = local.state_bucket
+      key            = local.state_vars.locals.state_key
+      region         = "us-east-1"
+      encrypt        = true
+      use_lockfile   = true
+      s3_bucket_tags = local.common_tags
+      # base credentials: "terraform" for abotyan001 itself, or the chained "terraform-management"
+      # ~/.aws/config profile when state_role_arn points at a member account's terraform-target
+      profile = local.state_profile
+    },
+    local.state_role_arn == null ? {} : {
+      assume_role = { role_arn = local.state_role_arn }
+    }
+  )
 
   generate = {
     path      = "backend.tf"
