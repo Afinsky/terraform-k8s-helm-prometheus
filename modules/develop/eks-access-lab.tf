@@ -13,11 +13,15 @@
 locals {
   # SSO role names carry a random suffix that changes if the permission
   # set's account assignment is ever recreated - look roles up by name
-  # regex instead of hardcoding the ARN.
+  # regex instead of hardcoding the ARN. Permission set names come from
+  # 01-identity-center/permission_sets.tf: platform-admin/devops-admin/
+  # developer (there's no more per-team Payments/Search split there - payments
+  # and search below just keep the prior slots so this lab's namespace/RBAC
+  # shape below didn't need touching too).
   sso_role_patterns = {
-    platform_admin = "AWSReservedSSO_PlatformAdmin_.*"
-    payments       = "AWSReservedSSO_EKSDev-Payments_.*"
-    search         = "AWSReservedSSO_EKSDev-Search_.*"
+    platform_admin = "AWSReservedSSO_platform-admin_.*"
+    payments       = "AWSReservedSSO_devops-admin_.*"
+    search         = "AWSReservedSSO_developer_.*"
   }
 }
 

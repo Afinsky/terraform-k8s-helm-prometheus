@@ -13,7 +13,7 @@
 # --- Terraform side --------------------------------------------------------
 # versions.tf pins `required_version >= 1.3.2`; this is what's used day to day.
 terraform      = "1.15"
-# pre-commit hook `terraform_tflint` + accounts/abotyan001/us-east-1/develop/.tflint.hcl
+# pre-commit hook `terraform_tflint` + modules/develop/.tflint.hcl
 tflint         = "0.64"
 # pre-commit hook `terraform_docs`; regenerates each module's README.md
 # between the BEGIN_TF_DOCS/END_TF_DOCS markers (.terraform-docs.yml)
@@ -65,12 +65,12 @@ description = "Point kubeconfig at the develop cluster"
 run = "aws eks update-kubeconfig --name dev-me-k8s-cluster --region us-east-1 --profile terraform"
 
 [tasks.docs]
-description = "Regenerate accounts/abotyan001/us-east-1/develop/README.md"
-run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject accounts/abotyan001/us-east-1/develop"
+description = "Regenerate modules/develop/README.md"
+run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject modules/develop"
 
 [tasks.validate]
-description = "fmt check + validate + tflint on the develop root module"
-dir = "{{ config_root }}/accounts/abotyan001/us-east-1/develop"
+description = "fmt check + validate + tflint on the develop module"
+dir = "{{ config_root }}/modules/develop"
 run = [
   "terraform fmt -check -recursive",
   "terraform validate",

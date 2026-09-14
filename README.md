@@ -37,8 +37,11 @@ permission set that becomes the `lab-admin` SSO profile everything else runs as.
   `--backend-bootstrap` baked into every `Makefile` command. Each layer's own state key comes
   from a sibling `state.hcl`, so migrating to Terragrunt didn't require moving any state.
 - There's no `generate "provider"` block: `develop`'s kubernetes/helm providers need live
-  `module.eks` outputs, which Terragrunt can't template statically, so `provider.tf` in each
-  layer is a hand-written, committed file.
+  `module.eks` outputs, which Terragrunt can't template statically, so `provider.tf` is a
+  hand-written, committed file (in `modules/develop/` — see below).
+- `develop` is a thin wrapper: its `terragrunt.hcl` has no Terraform of its own, just
+  `terraform { source = "${get_repo_root()}/modules/develop" }` plus `inputs`. `01-identity-center`
+  isn't modularized this way — its `.tf` files still live directly in the layer directory.
 
 ### `01-identity-center`
 
@@ -93,14 +96,16 @@ the live cluster; nothing here references the gitops repo.
 ```
 root.hcl                          # Terragrunt root config: backend, version constraints, inputs
 global.hcl                        # project_name, common_tags
+modules/
+  develop/                        # all of layer 2's Terraform — see above
+    unused/                       # archived alternative node-group configs (not compiled)
 accounts/
   abotyan001/
     account.hcl                   # aws_account_alias, aws_account_id
     us-east-1/
       region.hcl                  # aws_region
       01-identity-center/         # layer 1 — see above
-      develop/                    # layer 2 — see above
-        unused/                   # archived alternative node-group configs (not compiled)
+      develop/                    # layer 2 — terragrunt.hcl + state.hcl only, wires up modules/develop
 k8s/
   manifests/                      # raw upstream YAML, decoded+applied via kubernetes_manifest
   helm/                           # helm_release values files
@@ -122,7 +127,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 | `terraform` | the actual provisioning engine |
 | `terragrunt` | layering, shared backend config, DRY inputs |
 | `tflint` | `terraform_unused_declarations` and a handful of other rules, in pre-commit |
-| `terraform-docs` | regenerates `develop/README.md`'s inputs/outputs tables |
+| `terraform-docs` | regenerates `01-identity-center/README.md` and `modules/develop/README.md`'s inputs/outputs tables |
 | `pre-commit` | runs all of the above + `conventional-pre-commit` on every commit |
 | `awscli` | SSO login, `aws eks update-kubeconfig` |
 | `helm` / `kubectl` / `kustomize` | ad-hoc cluster debugging and rendering — also used against the parked `../argo-k8s-helm` repo |

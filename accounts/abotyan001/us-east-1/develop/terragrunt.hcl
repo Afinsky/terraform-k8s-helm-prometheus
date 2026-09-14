@@ -1,12 +1,19 @@
 #-------------------------------------------------------------
 # terragrunt.hcl
 #
-# - configure inputs for this layer (was develop.tfvars)
+# - wire up the modules/develop module and configure its inputs (was develop.tfvars)
 # - backend key comes from state.hcl (see root.hcl)
 #-------------------------------------------------------------
 
 include {
   path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  # Local path, not a versioned/remote source: this module isn't published or reused outside
+  # this repo (yet — accounts/workloads-dev/us-east-1 is a candidate to point at the same
+  # module once it grows a develop layer of its own).
+  source = "${get_repo_root()}/modules/develop"
 }
 
 inputs = {
