@@ -10,9 +10,9 @@ include {
 }
 
 terraform {
-  # Local path, not a versioned/remote source: this module isn't published or reused outside
-  # this repo (yet — accounts/workloads-dev/us-east-1 is a candidate to point at the same
-  # module once it grows a develop layer of its own).
+  # Local path, not a versioned/remote source: this module isn't published outside this
+  # repo. It is reused, though — see accounts/workloads-dev/us-east-1/develop/terragrunt.hcl,
+  # the same module applied into a different account.
   source = "${get_repo_root()}/modules/develop"
 }
 

@@ -36,7 +36,12 @@ locals {
   # at plan time than silently grant access via the wrong role.
   sso_role_arn = { for k, v in data.aws_iam_roles.sso : k => one(v.arns) }
 
-  lab_access_entries = {
+  # Not every permission set above is assigned to every account this module
+  # runs in (platform-admin, in particular, is deliberately scoped to just
+  # the management account - see 01-identity-center/permission_sets.tf) -
+  # filtered out below rather than erroring, so this file works unmodified
+  # in an account with only 2 of the 3 roles.
+  lab_access_entries_all = {
     "eks-access-lab-platform-admin" = {
       kubernetes_groups = []
       principal_arn     = local.sso_role_arn.platform_admin
@@ -71,6 +76,10 @@ locals {
       kubernetes_groups = ["search-devs"]
       principal_arn     = local.sso_role_arn.search
     }
+  }
+
+  lab_access_entries = {
+    for k, v in local.lab_access_entries_all : k => v if v.principal_arn != null
   }
 }
 

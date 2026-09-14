@@ -22,3 +22,18 @@ output "terraform_management_role_arn" {
   value       = aws_iam_role.terraform_management.arn
   description = "Assume this (via the \"terraform\" static IAM user) to reach terraform-target in any member account."
 }
+
+output "dns_zone_writer_role_arn" {
+  value       = aws_iam_role.dns_zone_writer.arn
+  description = "modules/develop assumes this (from any account) to write records into the Route53 zone below."
+}
+
+output "dns_zone_id" {
+  value       = data.aws_route53_zone.this.zone_id
+  description = "Route53 hosted zone ID for dns_zone_name, in this (the management) account."
+}
+
+output "dns_zone_name" {
+  value       = local.zone_name
+  description = "Domain this Organization's Route53 zone manages."
+}

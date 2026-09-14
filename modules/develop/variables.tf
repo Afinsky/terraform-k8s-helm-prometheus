@@ -40,3 +40,18 @@ variable "repo_root" {
   type        = string
   description = "Absolute path to the repo root, set via Terragrunt's get_repo_root(). Terragrunt always runs Terraform from a copy staged under .terragrunt-cache, so path.module-relative traversal up to files outside this stack (k8s/manifests/, policies/) can't be used — the depth of that staging copy isn't stable."
 }
+
+variable "dns_zone_writer_role_arn" {
+  type        = string
+  description = "ARN of 01-identity-center's dns-zone-writer role, in the management account. Assumed by the aws.dns provider (see provider.tf) and by external-dns's IRSA role (external-dns.tf) — the Route53 zone lives in that account regardless of which account this module is applied into."
+}
+
+variable "dns_zone_id" {
+  type        = string
+  description = "Route53 hosted zone ID, from 01-identity-center's dns_zone_id output. The zone itself lives in the management account, not this one."
+}
+
+variable "dns_zone_name" {
+  type        = string
+  description = "Domain name of the zone above, from 01-identity-center's dns_zone_name output."
+}
