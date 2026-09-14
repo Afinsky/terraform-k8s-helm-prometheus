@@ -18,26 +18,11 @@ locals {
     suffix => "${local.email_parts[0]}+${suffix}@${local.email_parts[1]}"
   }
 
-  groups = toset(["platform-admins", "payments-devs", "search-devs"])
+  groups = toset(["platform-admins", "devops-admins", "developers", "qa-testers"])
 
   users = {
-    aliaksei = { given_name = "Aliaksei", family_name = "Admin", email = local.alias_email.admin, group = "platform-admins" }
-    alice    = { given_name = "Alice", family_name = "Payments", email = local.alias_email.alice, group = "payments-devs" }
-    bob      = { given_name = "Bob", family_name = "Search", email = local.alias_email.bob, group = "search-devs" }
-  }
-
-  # One team = one group = one permission set = one IAM role.
-  # Permission set names are fixed (not resource_name-prefixed):
-  # Phase 3 (02-cluster) looks them up by the regex "AWSReservedSSO_EKSDev-...".
-  teams = {
-    payments = {
-      group          = "payments-devs",
-      permission_set = "EKSDev-Payments"
-    }
-
-    search = {
-      group          = "search-devs",
-      permission_set = "EKSDev-Search"
-    }
+    aliaksei = { given_name = "Aliaksei", family_name = "Admin", email = local.alias_email.admin, group = "devops-admins" }
+    alice    = { given_name = "Alice", family_name = "Developer", email = local.alias_email.alice, group = "developers" }
+    bob      = { given_name = "Bob", family_name = "Tester", email = local.alias_email.bob, group = "qa-testers" }
   }
 }
