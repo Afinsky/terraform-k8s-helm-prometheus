@@ -11,14 +11,14 @@ repos:
       - id: terragrunt-hcl-fmt
 
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.88.0 # Do not upgrade https://github.com/antonbabenko/pre-commit-terraform/issues/640#issuecomment-2367816858
+    rev: v1.109.1 # Do not upgrade https://github.com/antonbabenko/pre-commit-terraform/issues/640#issuecomment-2367816858
     hooks:
       - id: terraform_validate
         args:
           - '--hook-config=--retry-once-with-cleanup=true'
 
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: v1.88.0
+    rev: v1.109.1 # Do not upgrade https://github.com/antonbabenko/pre-commit-terraform/issues/640#issuecomment-2367816858
     hooks:
       - id: terraform_fmt
       - id: terraform_docs
