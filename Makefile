@@ -4,7 +4,11 @@
 
 SHELL := $(shell which bash) # set default shell
 
-ACCOUNT_DIR := accounts/abotyan001/us-east-1
+# ACCOUNT selects which accounts/<alias>/us-east-1 tree a layer target resolves against.
+# eg make develop apply                      -> accounts/abotyan001/us-east-1/develop
+# eg make ACCOUNT=workloads-dev develop apply -> accounts/workloads-dev/us-east-1/develop
+ACCOUNT ?= abotyan001
+ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
 # aws sso login profile. Only "01-identity-center" (and future consumer stacks) use it —
 # see accounts/abotyan001/us-east-1/01-identity-center/provider.tf for why "terraform"
@@ -29,9 +33,11 @@ help: ## Show Help
 # make <layer> <command>        - run a Terragrunt command against one layer
 # make run-all-plan             - plan every layer
 # make run-all-apply            - apply every layer
+# ACCOUNT=<alias>               - target a member account instead of abotyan001 (default)
 #
 # eg make develop plan
 # eg make 01-identity-center apply
+# eg make ACCOUNT=workloads-dev develop apply
 # ----------------------------------------------------------------
 
 setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml

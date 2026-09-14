@@ -17,3 +17,8 @@ output "account_ids" {
   value       = { for k, v in aws_organizations_account.this : k => v.id }
   description = "AWS account IDs of accounts created by this stack."
 }
+
+output "terraform_management_role_arn" {
+  value       = aws_iam_role.terraform_management.arn
+  description = "Assume this (via the \"terraform\" static IAM user) to reach terraform-target in any member account."
+}

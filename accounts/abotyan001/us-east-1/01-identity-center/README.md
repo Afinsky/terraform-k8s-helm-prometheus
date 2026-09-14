@@ -10,7 +10,10 @@ Terraform can't handle only the things the `hashicorp/aws` provider has no
 resource for:
 - enabling IAM Identity Center as an organization instance;
 - customizing the access portal URL;
-- setting a password/one-time password for created users.
+- setting a password/one-time password for created users;
+- activating CloudFormation's Organizations access (see step 3 below) —
+  needed once, account-wide, before `aws_cloudformation_stack_set.terraform_target`
+  (`account_access_stackset.tf`) can create a `SERVICE_MANAGED` StackSet.
 
 ## Order of operations
 
@@ -27,7 +30,19 @@ Then by hand in the console (region `us-east-1`):
 2. **Settings → Access portal URL → Customize**, note the URL
 
 ```bash
-# 2. Everything else: groups, users, memberships, PlatformAdmin, EKSDev-*
+# 3. One-time, account-wide: activate CloudFormation's Organizations access.
+#    Enabling Organizations trusted access for
+#    member.org.stacksets.cloudformation.amazonaws.com (organization.tf) is
+#    not enough — CloudFormation has its own separate switch, with no
+#    Terraform resource for it (checked provider >= 6.60.0's schema).
+#    Without this, aws_cloudformation_stack_set.terraform_target fails with:
+#    "ValidationError: You must enable organizations access to operate a
+#    service managed stack set". Run once, from the management account:
+aws cloudformation describe-organizations-access --profile lab-admin --region us-east-1
+aws cloudformation activate-organizations-access --profile lab-admin --region us-east-1
+
+# 4. Everything else: groups, users, memberships, PlatformAdmin, EKSDev-*,
+#    and the terraform-target StackSet.
 terragrunt apply
 ```
 
