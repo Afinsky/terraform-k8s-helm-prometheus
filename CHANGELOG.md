@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.1...v1.2.2) (2026-09-14)
+
+
+### Bug Fixes
+
+* reorganiza organization + new account as a member ([#9](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/9)) ([8740de1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/8740de1935c0c220beed8555e03999e49bcc9f2d))
+
 ## [1.2.1](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.0...v1.2.1) (2026-09-13)
 
 
