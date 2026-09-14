@@ -2,7 +2,7 @@
 # only be attached to a load balancer in the same account, so it can't live
 # in the management account instead. Its DNS validation CNAME, though, has
 # to go into the Route53 zone, which does live in the management account
-# (01-identity-center/dns.tf) — hence the split into two module calls below
+# (modules/identity-center/dns.tf) — hence the split into two module calls below
 # instead of the module's usual single call.
 module "acm_backend" {
   source  = "terraform-aws-modules/acm/aws"

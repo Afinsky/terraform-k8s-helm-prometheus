@@ -14,7 +14,7 @@ locals {
   # SSO role names carry a random suffix that changes if the permission
   # set's account assignment is ever recreated - look roles up by name
   # regex instead of hardcoding the ARN. Permission set names come from
-  # 01-identity-center/permission_sets.tf: platform-admin/devops-admin/
+  # modules/identity-center/permission_sets.tf: platform-admin/devops-admin/
   # developer (there's no more per-team Payments/Search split there - payments
   # and search below just keep the prior slots so this lab's namespace/RBAC
   # shape below didn't need touching too).
@@ -38,7 +38,7 @@ locals {
 
   # Not every permission set above is assigned to every account this module
   # runs in (platform-admin, in particular, is deliberately scoped to just
-  # the management account - see 01-identity-center/permission_sets.tf) -
+  # the management account - see modules/identity-center/permission_sets.tf) -
   # filtered out below rather than erroring, so this file works unmodified
   # in an account with only 2 of the 3 roles.
   lab_access_entries_all = {

@@ -18,7 +18,7 @@ terraform {
 
 inputs = {
   # SSO profile for account_id 841775659851, role "devops-admin" — that
-  # permission set is assigned org-wide by 01-identity-center/permission_sets.tf,
+  # permission set is assigned org-wide by modules/identity-center/permission_sets.tf,
   # so no new IAM role/trust policy was needed for this account.
   profile     = "workloads-dev-admin"
   environment = "dev"

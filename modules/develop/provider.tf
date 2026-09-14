@@ -9,7 +9,7 @@ provider "aws" {
 }
 
 # The Route53 zone this module's ACM validation records go into lives in the
-# management account, not this one (see 01-identity-center/dns.tf) — this
+# management account, not this one (see modules/identity-center/dns.tf) — this
 # assumes dns-zone-writer from the same base identity as the default provider
 # above, exactly like external-dns.tf's IRSA role does at runtime for its own
 # record writes.

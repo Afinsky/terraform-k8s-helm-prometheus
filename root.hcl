@@ -32,7 +32,7 @@ locals {
 
   # State lives in the SAME account this account.hcl describes — abotyan001's own state stays in its
   # historical central bucket, read directly as the "terraform" static IAM user (no override needed
-  # there). A member account vended by 01-identity-center/accounts.tf gets its own bucket, created
+  # there). A member account vended by modules/identity-center/accounts.tf gets its own bucket, created
   # inside itself: its account.hcl sets state_profile to "terraform-management" (a chained ~/.aws/config
   # profile: terraform-management assumed from terraform) and state_role_arn to that account's
   # terraform-target — the role account_access_stackset.tf auto-deploys into every member account,

@@ -12,7 +12,7 @@ locals {
   # This account's own state bucket, created inside itself — not in abotyan001's
   # central "dev-me-terraform-state" — the first time `--backend-bootstrap` runs
   # a layer here. terraform-target is auto-deployed into every member account by
-  # 01-identity-center/account_access_stackset.tf; it trusts only
+  # modules/identity-center/account_access_stackset.tf; it trusts only
   # terraform-management, hence state_profile below instead of "terraform"
   # directly. See root.hcl.
   #

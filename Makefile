@@ -11,7 +11,7 @@ ACCOUNT ?= abotyan001
 ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
 # aws sso login profile. Only "01-identity-center" (and future consumer stacks) use it —
-# see accounts/abotyan001/us-east-1/01-identity-center/provider.tf for why "terraform"
+# see modules/identity-center/provider.tf for why "terraform"
 # (a static IAM user) is used instead everywhere the lab-admin SSO role isn't safe to run under yet.
 IAM_ROLE := lab-admin
 

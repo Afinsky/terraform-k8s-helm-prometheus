@@ -8,7 +8,7 @@
 #
 # Same IRSA pattern as load-balancer-controller.tf: dedicated role trusting only this controller's
 # ServiceAccount. Its own permissions are just an assume-role, though - the
-# Route53 zone lives in the management account (01-identity-center/dns.tf),
+# Route53 zone lives in the management account (modules/identity-center/dns.tf),
 # not this one, so this role hops through dns-zone-writer there rather than
 # calling Route53 directly. See aws_iam_role_policy.external_dns_assume_dns.
 
@@ -45,7 +45,7 @@ EOF
 # The official tutorial (https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md)
 # grants route53:* directly here; this repo's zone isn't in this account, so
 # instead the only permission this role needs is to assume dns-zone-writer
-# (01-identity-center/dns.tf), which holds the actual Route53 permissions,
+# (modules/identity-center/dns.tf), which holds the actual Route53 permissions,
 # scoped to the one zone, over there.
 resource "aws_iam_role_policy" "external_dns_assume_dns" {
   name = "${local.prefix}-external-dns-assume-dns"

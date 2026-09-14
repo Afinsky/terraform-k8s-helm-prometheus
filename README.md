@@ -39,9 +39,11 @@ permission set that becomes the `lab-admin` SSO profile everything else runs as.
 - There's no `generate "provider"` block: `develop`'s kubernetes/helm providers need live
   `module.eks` outputs, which Terragrunt can't template statically, so `provider.tf` is a
   hand-written, committed file (in `modules/develop/` — see below).
-- `develop` is a thin wrapper: its `terragrunt.hcl` has no Terraform of its own, just
-  `terraform { source = "${get_repo_root()}/modules/develop" }` plus `inputs`. `01-identity-center`
-  isn't modularized this way — its `.tf` files still live directly in the layer directory.
+- Both layers are thin wrappers: each `terragrunt.hcl` has no Terraform of its own, just a
+  `terraform { source = "${get_repo_root()}/modules/<name>" }` block plus `inputs`. Only
+  `modules/develop` is actually reused across accounts, though (`modules/identity-center` was
+  split out purely for the layer/module consistency, not because anything else points at it —
+  it defines the Organization itself, so it's inherently single-instance).
 
 ### `01-identity-center`
 
@@ -95,17 +97,23 @@ the live cluster; nothing here references the gitops repo.
 
 ```
 root.hcl                          # Terragrunt root config: backend, version constraints, inputs
-global.hcl                        # project_name, common_tags
+global.hcl                        # project_name, common_tags, dns_zone_* (see "develop" above)
 modules/
+  identity-center/                # all of layer 1's Terraform — see above
   develop/                        # all of layer 2's Terraform — see above
     unused/                       # archived alternative node-group configs (not compiled)
 accounts/
-  abotyan001/
+  abotyan001/                     # the management account
     account.hcl                   # aws_account_alias, aws_account_id
     us-east-1/
       region.hcl                  # aws_region
-      01-identity-center/         # layer 1 — see above
+      01-identity-center/         # layer 1 — terragrunt.hcl + state.hcl only, wires up modules/identity-center
       develop/                    # layer 2 — terragrunt.hcl + state.hcl only, wires up modules/develop
+  workloads-dev/                  # a member account vended by modules/identity-center/accounts.tf
+    account.hcl
+    us-east-1/
+      region.hcl
+      develop/                    # same modules/develop, applied into this account instead
 k8s/
   manifests/                      # raw upstream YAML, decoded+applied via kubernetes_manifest
   helm/                           # helm_release values files
@@ -127,7 +135,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 | `terraform` | the actual provisioning engine |
 | `terragrunt` | layering, shared backend config, DRY inputs |
 | `tflint` | `terraform_unused_declarations` and a handful of other rules, in pre-commit |
-| `terraform-docs` | regenerates `01-identity-center/README.md` and `modules/develop/README.md`'s inputs/outputs tables |
+| `terraform-docs` | regenerates `modules/identity-center/README.md` and `modules/develop/README.md`'s inputs/outputs tables |
 | `pre-commit` | runs all of the above + `conventional-pre-commit` on every commit |
 | `awscli` | SSO login, `aws eks update-kubeconfig` |
 | `helm` / `kubectl` / `kustomize` | ad-hoc cluster debugging and rendering — also used against the parked `../argo-k8s-helm` repo |

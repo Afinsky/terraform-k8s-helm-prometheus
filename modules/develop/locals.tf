@@ -68,7 +68,7 @@ locals {
 ##############################################################################
 #  Route53
 ##############################################################################
-# Zone lives in the management account (01-identity-center/dns.tf), not this
+# Zone lives in the management account (modules/identity-center/dns.tf), not this
 # one — id/name come in as inputs instead of a local data lookup.
 
 locals {
