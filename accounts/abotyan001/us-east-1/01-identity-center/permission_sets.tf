@@ -3,10 +3,7 @@
 # accounts are matched by name regex against the Organization's live account
 # list (data.tf), not hardcoded IDs. Add an account in accounts.tf and any
 # permission set whose account_patterns match its name picks it up on the
-# next apply, no other edit needed. Modeled on Automata's
-# tf-aws-permission-set (setproduct(groups, account_ids) → for_each
-# assignments) collapsed into a single stack instead of a separate module,
-# since this repo has no per-permission-set Terragrunt units to wrap.
+# next apply, no other edit needed.
 locals {
   # name => id for every ACTIVE account in the org, management account
   # included (it's a member of the org root OU too).
@@ -37,14 +34,6 @@ locals {
       session_duration = "PT1H" # short: comes in handy in Phase 7
       account_patterns = [".*"]
       managed_policies = ["arn:aws:iam::aws:policy/AdministratorAccess"]
-      # inline_policy = jsonencode({
-      #   Version = "2012-10-17"
-      #   Statement = [{
-      #     Effect   = "Allow"
-      #     Action   = ["eks:DescribeCluster", "eks:ListClusters"]
-      #     Resource = "*"
-      #   }]
-      # })
     }
 
     developer = {
@@ -72,9 +61,7 @@ locals {
     ]
   }
 
-  # Flattened "permission_set x account" pairs, one map key per assignment —
-  # the setproduct(groups, account_ids) idea from tf-aws-permission-set,
-  # done directly since each permission set here has exactly one group.
+  # Flattened "permission_set x account" pairs, one map key per assignment.
   permission_set_assignments = merge([
     for ps_key, account_ids in local.permission_set_accounts : {
       for account_id in account_ids : "${ps_key}_${account_id}" => {
