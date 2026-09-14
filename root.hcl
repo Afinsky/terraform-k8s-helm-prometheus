@@ -10,7 +10,7 @@
 #   the AWS SDK and creates it (versioned, AES256-encrypted, public access blocked) if missing, idempotently,
 #   outside of any terraform state.
 #
-# NOTE: there's no `generate "provider"` block here. `develop`'s kubernetes/helm providers are wired off
+# NOTE: there's no `generate "provider"` block here. `eks-cluster`'s kubernetes/helm providers are wired off
 # live `module.eks` outputs, which Terragrunt can't template statically, so both `provider.tf` files stay
 # hand-written and committed as-is.
 #---------------------------------------------------------------------------------------------------------------------

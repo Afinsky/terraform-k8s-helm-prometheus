@@ -10,9 +10,9 @@ include {
 }
 
 terraform {
-  # Local path, same reasoning as accounts/abotyan001/us-east-1/develop/terragrunt.hcl —
+  # Local path, same reasoning as accounts/abotyan001/us-east-1/eks-cluster/terragrunt.hcl —
   # this module isn't reused (it defines the Organization itself, applied from exactly
-  # one account), just kept out of the layer directory for consistency with `develop`.
+  # one account), just kept out of the layer directory for consistency with `eks-cluster`.
   source = "${get_repo_root()}/modules/identity-center"
 }
 

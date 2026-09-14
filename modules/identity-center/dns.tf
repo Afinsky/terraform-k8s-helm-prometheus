@@ -1,4 +1,4 @@
-# Cross-account DNS writer: modules/develop runs in target accounts (workloads-dev
+# Cross-account DNS writer: modules/eks-cluster runs in target accounts (workloads-dev
 # and future ones), but the Route53 zone stays here in the management account —
 # nothing else in this Organization moves it, and it's simplest for a
 # personal-domain zone to have exactly one home. Route53 hosted zones have no
@@ -8,11 +8,11 @@
 # Two distinct callers assume this role, both by ARN pattern (not per-account,
 # so a new target account needs no change here):
 #   - external-dns's IRSA role in each target cluster (`*-external-dns`,
-#     see modules/develop/external-dns.tf) - the live controller, syncing
+#     see modules/eks-cluster/external-dns.tf) - the live controller, syncing
 #     Ingress hosts into Route53 on an ongoing basis.
-#   - the SSO `devops-admin` role - modules/develop's ACM setup creates the
+#   - the SSO `devops-admin` role - modules/eks-cluster's ACM setup creates the
 #     one-time DNS validation CNAME record for each cluster's certificate as
-#     that same identity (the one `terragrunt apply` runs as for `develop`).
+#     that same identity (the one `terragrunt apply` runs as for `eks-cluster`).
 data "aws_route53_zone" "this" {
   name         = local.zone_name
   private_zone = false
@@ -48,7 +48,7 @@ resource "aws_iam_role" "dns_zone_writer" {
   tags = local.common_tags
 }
 
-# Same shape as modules/develop/external-dns.tf's own policy (that role's
+# Same shape as modules/eks-cluster/external-dns.tf's own policy (that role's
 # permissions collapse to just this assume, once it stops touching Route53
 # directly - see that file): mutating actions scoped to the one zone,
 # ListHostedZones on "*" since Route53 has no resource-level permissions for it.

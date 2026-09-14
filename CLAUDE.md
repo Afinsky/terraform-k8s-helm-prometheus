@@ -16,12 +16,12 @@ make login                       # aws sso login --profile lab-admin
 make lint                        # pre-commit run --all-files (fmt, validate, tflint, terraform-docs, conventional commits)
 
 make <layer> <command>           # run one terragrunt command against one layer, e.g.:
-make develop plan
+make eks-cluster plan
 make 01-identity-center apply
 
-make develop cmd CMD="console"   # anything without a Makefile shortcut: terragrunt run -- <cmd>
-make develop state-list
-make develop debug-plan          # --log-level debug
+make eks-cluster cmd CMD="console"   # anything without a Makefile shortcut: terragrunt run -- <cmd>
+make eks-cluster state-list
+make eks-cluster debug-plan          # --log-level debug
 make run-all-plan                # plan every layer under accounts/abotyan001/us-east-1
 make run-all-apply
 

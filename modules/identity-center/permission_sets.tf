@@ -40,7 +40,7 @@ locals {
       description      = "Read-only + EKS discovery, on workloads-dev and the management account."
       group            = "developers"
       session_duration = "PT1H"
-      # abotyan001-root: needed so modules/develop's eks-access-lab.tf (which
+      # abotyan001-root: needed so modules/eks-cluster's eks-access-lab.tf (which
       # today runs the PLAT-101 lab against this account, not workloads-dev)
       # has a third distinct role to assign namespace-scoped RBAC to.
       account_patterns = ["^workloads-dev$", "^abotyan001-root$"]

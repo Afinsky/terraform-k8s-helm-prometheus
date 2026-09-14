@@ -1,7 +1,7 @@
 #-------------------------------------------------------------
 # terragrunt.hcl
 #
-# - wire up the modules/develop module and configure its inputs (was develop.tfvars)
+# - wire up the modules/eks-cluster module and configure its inputs (was eks-cluster.tfvars)
 # - backend key comes from state.hcl (see root.hcl)
 #-------------------------------------------------------------
 
@@ -11,7 +11,7 @@ include {
 
 terraform {
   # Local path, not a versioned/remote source: this module isn't published outside this
-  # repo. It is reused, though — see accounts/workloads-dev/us-east-1/develop/terragrunt.hcl,
+  # repo. It is reused, though — see accounts/workloads-dev/us-east-1/eks-cluster/terragrunt.hcl,
   # the same module applied into a different account.
   source = "${get_repo_root()}/modules/develop"
 }

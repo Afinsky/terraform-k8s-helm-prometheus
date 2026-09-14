@@ -13,7 +13,7 @@
 # --- Terraform side --------------------------------------------------------
 # versions.tf pins `required_version >= 1.3.2`; this is what's used day to day.
 terraform      = "1.15"
-# pre-commit hook `terraform_tflint` + modules/develop/.tflint.hcl
+# pre-commit hook `terraform_tflint` + modules/eks-cluster/.tflint.hcl
 tflint         = "0.64"
 # pre-commit hook `terraform_docs`; regenerates each module's README.md
 # between the BEGIN_TF_DOCS/END_TF_DOCS markers (.terraform-docs.yml)

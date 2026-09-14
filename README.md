@@ -146,7 +146,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 make setup                       # mise install
 make login                       # aws sso login --profile lab-admin
 
-make <layer> plan                # <layer> is 01-identity-center or develop
+make <layer> plan                # <layer> is 01-identity-center or eks-cluster
 make <layer> apply
 make run-all-plan                # plan every layer
 make lint                        # pre-commit run --all-files

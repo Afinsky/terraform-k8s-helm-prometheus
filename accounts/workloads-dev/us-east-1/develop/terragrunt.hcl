@@ -1,7 +1,7 @@
 #-------------------------------------------------------------
 # terragrunt.hcl
 #
-# - same modules/develop module as accounts/abotyan001/us-east-1/develop, applied
+# - same modules/eks-cluster module as accounts/abotyan001/us-east-1/eks-cluster, applied
 #   into the workloads-dev account instead
 # - backend key comes from state.hcl (see root.hcl); bucket/profile/role come
 #   from account.hcl (this account gets its own state bucket, reached via the
@@ -29,7 +29,7 @@ inputs = {
   # Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com
   my_ip_cidr = "83.175.181.227/32"
 
-  # Different range from abotyan001/develop's 10.30.0.0/16 — no peering between
+  # Different range from abotyan001/eks-cluster's 10.30.0.0/16 — no peering between
   # these accounts, but keeping them non-overlapping costs nothing and avoids
   # surprises if that ever changes.
   vpc = {
