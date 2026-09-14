@@ -20,6 +20,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # TODO: remove once auth is confirmed working — surfaces the real error
+          # instead of "full output hidden for security".
+          show_full_output: true
           prompt: |
             Review this pull request. Focus on correctness bugs, security issues
             (this repo provisions real AWS/IAM/EKS infrastructure via Terraform —
