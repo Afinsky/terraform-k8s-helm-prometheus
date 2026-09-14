@@ -65,13 +65,13 @@ login: ## aws sso login (lab-admin profile)
 # create it itself (versioned, encrypted, public access blocked) the first time it's missing.
 # See root.hcl's remote_state block.
 # ----------------------------------------------------------------
-.PHONY: 01-identity-center develop
+.PHONY: 01-identity-center eks-cluster
 
 01-identity-center: ## AWS Organization, IAM Identity Center users/groups/permission sets
 	$(eval LAYER = $(ACCOUNT_DIR)/01-identity-center)
 
-develop: ## VPC, EKS, ingress-nginx, external-dns/-secrets, sample apps
-	$(eval LAYER = $(ACCOUNT_DIR)/develop)
+eks-cluster: ## VPC, EKS, ingress-nginx, external-dns/-secrets, sample apps
+	$(eval LAYER = $(ACCOUNT_DIR)/eks-cluster)
 
 # ----------------------------------------------------------------
 # Terragrunt commands

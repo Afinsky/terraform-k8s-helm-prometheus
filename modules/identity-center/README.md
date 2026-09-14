@@ -4,7 +4,7 @@ Terraform module for Phase 1 + Phase 2 of the PLAT-101 lab, applied via
 [`accounts/abotyan001/us-east-1/01-identity-center`](../../accounts/abotyan001/us-east-1/01-identity-center)'s
 `terragrunt.hcl`. Creates the AWS Organization, groups, users, group
 memberships, and all permission sets/assignments. Structure and backend
-pattern match [`develop`](../eks-cluster): S3 backend and inputs managed by
+pattern match [`eks-cluster`](../eks-cluster): S3 backend and inputs managed by
 Terragrunt (see `../../root.hcl` and that layer's `terragrunt.hcl`).
 
 Terraform can't handle only the things the `hashicorp/aws` provider has no
@@ -62,6 +62,6 @@ those first.
 
 ## Variables
 
-See `variables.tf`. `profile` is the same IAM profile used by `../develop`'s
+See `variables.tf`. `profile` is the same IAM profile used by `../eks-cluster`'s
 `terragrunt.hcl` (e.g. `terraform`): at the time of the first apply, the
 `lab-admin` SSO profile doesn't exist yet.

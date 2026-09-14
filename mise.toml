@@ -54,23 +54,23 @@ python     = "3.12"
 [env]
 # Keeps `terraform`/`aws` from needing -chdir juggling if you cd around; the
 # Makefile already passes -chdir explicitly, this is just for ad-hoc use.
-TF_VAR_FILE = "develop.tfvars"
+TF_VAR_FILE = "eks-cluster.tfvars"
 
 [tasks.pre-commit]
 description = "Run all pre-commit hooks"
 run = "pre-commit run --all-files"
 
 [tasks.context]
-description = "Point kubeconfig at the develop cluster"
+description = "Point kubeconfig at the eks-cluster layer's cluster"
 run = "aws eks update-kubeconfig --name dev-me-k8s-cluster --region us-east-1 --profile terraform"
 
 [tasks.docs]
-description = "Regenerate modules/develop/README.md"
-run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject modules/develop"
+description = "Regenerate modules/eks-cluster/README.md"
+run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject modules/eks-cluster"
 
 [tasks.validate]
-description = "fmt check + validate + tflint on the develop module"
-dir = "{{ config_root }}/modules/develop"
+description = "fmt check + validate + tflint on the eks-cluster module"
+dir = "{{ config_root }}/modules/eks-cluster"
 run = [
   "terraform fmt -check -recursive",
   "terraform validate",

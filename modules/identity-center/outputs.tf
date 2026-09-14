@@ -25,7 +25,7 @@ output "terraform_management_role_arn" {
 
 output "dns_zone_writer_role_arn" {
   value       = aws_iam_role.dns_zone_writer.arn
-  description = "modules/develop assumes this (from any account) to write records into the Route53 zone below."
+  description = "modules/eks-cluster assumes this (from any account) to write records into the Route53 zone below."
 }
 
 output "dns_zone_id" {

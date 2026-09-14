@@ -13,7 +13,7 @@ include {
 }
 
 terraform {
-  source = "${get_repo_root()}/modules/develop"
+  source = "${get_repo_root()}/modules/eks-cluster"
 }
 
 inputs = {

@@ -1,4 +1,4 @@
-# develop
+# eks-cluster
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
