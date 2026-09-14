@@ -1,5 +1,5 @@
 # PLAT-101 lab, Phase 3: RBAC RoleBindings pairing with the SSO access
-# entries in environments/develop/eks-access-lab.tf (their
+# entries in environments/eks-cluster/eks-access-lab.tf (their
 # kubernetes_groups -> the Group subjects here). Requires the namespaces
 # in eks-access-lab-namespaces.yaml to already exist.
 

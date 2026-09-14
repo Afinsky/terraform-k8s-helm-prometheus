@@ -7,9 +7,10 @@
 # option (vs. a manual aws_route53_record or a wildcard record) was picked.
 #
 # Same IRSA pattern as load-balancer-controller.tf: dedicated role trusting only this controller's
-# ServiceAccount, permissions scoped to the one zone this repo manages
-# (route53.tf) rather than the account-wide `hostedzone/*` the upstream
-# tutorial defaults to - see the comment on aws_iam_policy.external_dns.
+# ServiceAccount. Its own permissions are just an assume-role, though - the
+# Route53 zone lives in the management account (modules/identity-center/dns.tf),
+# not this one, so this role hops through dns-zone-writer there rather than
+# calling Route53 directly. See aws_iam_role_policy.external_dns_assume_dns.
 
 resource "aws_iam_role" "external_dns" {
   name               = "${local.prefix}-external-dns"
@@ -41,38 +42,22 @@ EOF
   }
 }
 
-# Same permission set as the official tutorial
-# (https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md),
-# tightened per that same doc's own least-privilege suggestion: the mutating
-# actions are scoped to the one zone in route53.tf (local.zone_id) instead of
-# every hosted zone in the account. ListHostedZones has to stay on "*" -
-# Route53 doesn't support resource-level permissions for that call.
-resource "aws_iam_policy" "external_dns" {
-  name = "${local.prefix}-external-dns"
+# The official tutorial (https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md)
+# grants route53:* directly here; this repo's zone isn't in this account, so
+# instead the only permission this role needs is to assume dns-zone-writer
+# (modules/identity-center/dns.tf), which holds the actual Route53 permissions,
+# scoped to the one zone, over there.
+resource "aws_iam_role_policy" "external_dns_assume_dns" {
+  name = "${local.prefix}-external-dns-assume-dns"
+  role = aws_iam_role.external_dns.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "route53:ChangeResourceRecordSets",
-          "route53:ListResourceRecordSets",
-          "route53:ListTagsForResources",
-        ]
-        Resource = ["arn:aws:route53:::hostedzone/${local.zone_id}"]
-      },
-      {
-        Effect   = "Allow"
-        Action   = ["route53:ListHostedZones"]
-        Resource = ["*"]
-      },
-    ]
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = [var.dns_zone_writer_role_arn]
+    }]
   })
-}
-
-resource "aws_iam_role_policy_attachment" "external_dns" {
-  role       = aws_iam_role.external_dns.name
-  policy_arn = aws_iam_policy.external_dns.arn
 }
 
 resource "helm_release" "external_dns" {
@@ -96,6 +81,14 @@ resource "helm_release" "external_dns" {
     {
       name  = "txtOwnerId"
       value = module.eks.cluster_name
+    },
+    {
+      # Flag name per `external-dns --help` as of app version v0.21.0 (pinned
+      # above) - re-check this against the upstream AWS tutorial if a future
+      # chart bump ever breaks Route53 auth, provider flags do get renamed.
+      name  = "extraArgs.aws-assume-role-arn"
+      value = var.dns_zone_writer_role_arn
+      type  = "string"
     }
   ]
 
@@ -111,5 +104,5 @@ resource "helm_release" "external_dns" {
   # start publishing LB status onto each Ingress (which external-dns then
   # reads), and its IAM role needs to be assumable before it can call
   # Route53 at all.
-  depends_on = [module.eks, helm_release.ingress_nginx, aws_iam_role_policy_attachment.external_dns]
+  depends_on = [module.eks, helm_release.ingress_nginx, aws_iam_role_policy.external_dns_assume_dns]
 }

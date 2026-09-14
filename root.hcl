@@ -10,7 +10,7 @@
 #   the AWS SDK and creates it (versioned, AES256-encrypted, public access blocked) if missing, idempotently,
 #   outside of any terraform state.
 #
-# NOTE: there's no `generate "provider"` block here. `develop`'s kubernetes/helm providers are wired off
+# NOTE: there's no `generate "provider"` block here. `eks-cluster`'s kubernetes/helm providers are wired off
 # live `module.eks` outputs, which Terragrunt can't template statically, so both `provider.tf` files stay
 # hand-written and committed as-is.
 #---------------------------------------------------------------------------------------------------------------------
@@ -32,7 +32,7 @@ locals {
 
   # State lives in the SAME account this account.hcl describes — abotyan001's own state stays in its
   # historical central bucket, read directly as the "terraform" static IAM user (no override needed
-  # there). A member account vended by 01-identity-center/accounts.tf gets its own bucket, created
+  # there). A member account vended by modules/identity-center/accounts.tf gets its own bucket, created
   # inside itself: its account.hcl sets state_profile to "terraform-management" (a chained ~/.aws/config
   # profile: terraform-management assumed from terraform) and state_role_arn to that account's
   # terraform-target — the role account_access_stackset.tf auto-deploys into every member account,

@@ -11,7 +11,7 @@
 # it anyway. So skip the round-trip and just always use it here.
 #
 # "lab-admin" is for stacks that CONSUME this identity instead of defining
-# it - e.g. environments/develop, or any future per-account workload stack.
+# it - e.g. environments/eks-cluster, or any future per-account workload stack.
 # Those don't touch PlatformAdmin's own definition, so there's no
 # self-reference risk.
 provider "aws" {

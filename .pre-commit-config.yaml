@@ -27,7 +27,7 @@ repos:
           - '--hook-config=--use-standard-markers=true'
           - '--args=--config=.terraform-docs.yml'
       - id: terraform_tflint
-        exclude: ^accounts/abotyan001/us-east-1/develop/unused/
+        exclude: ^modules/eks-cluster/unused/
         args:
           - '--args=--call-module-type=all'
           - '--args=--only=terraform_deprecated_interpolation'

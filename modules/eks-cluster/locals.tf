@@ -68,8 +68,10 @@ locals {
 ##############################################################################
 #  Route53
 ##############################################################################
+# Zone lives in the management account (modules/identity-center/dns.tf), not this
+# one — id/name come in as inputs instead of a local data lookup.
 
 locals {
-  zone_id   = data.aws_route53_zone.zone.zone_id
-  zone_name = "abotyan.click"
+  zone_id   = var.dns_zone_id
+  zone_name = var.dns_zone_name
 }

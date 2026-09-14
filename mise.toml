@@ -13,7 +13,7 @@
 # --- Terraform side --------------------------------------------------------
 # versions.tf pins `required_version >= 1.3.2`; this is what's used day to day.
 terraform      = "1.15"
-# pre-commit hook `terraform_tflint` + accounts/abotyan001/us-east-1/develop/.tflint.hcl
+# pre-commit hook `terraform_tflint` + modules/eks-cluster/.tflint.hcl
 tflint         = "0.64"
 # pre-commit hook `terraform_docs`; regenerates each module's README.md
 # between the BEGIN_TF_DOCS/END_TF_DOCS markers (.terraform-docs.yml)
@@ -54,23 +54,23 @@ python     = "3.12"
 [env]
 # Keeps `terraform`/`aws` from needing -chdir juggling if you cd around; the
 # Makefile already passes -chdir explicitly, this is just for ad-hoc use.
-TF_VAR_FILE = "develop.tfvars"
+TF_VAR_FILE = "eks-cluster.tfvars"
 
 [tasks.pre-commit]
 description = "Run all pre-commit hooks"
 run = "pre-commit run --all-files"
 
 [tasks.context]
-description = "Point kubeconfig at the develop cluster"
+description = "Point kubeconfig at the eks-cluster layer's cluster"
 run = "aws eks update-kubeconfig --name dev-me-k8s-cluster --region us-east-1 --profile terraform"
 
 [tasks.docs]
-description = "Regenerate accounts/abotyan001/us-east-1/develop/README.md"
-run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject accounts/abotyan001/us-east-1/develop"
+description = "Regenerate modules/eks-cluster/README.md"
+run = "terraform-docs markdown table --config=.terraform-docs.yml --output-file README.md --output-mode inject modules/eks-cluster"
 
 [tasks.validate]
-description = "fmt check + validate + tflint on the develop root module"
-dir = "{{ config_root }}/accounts/abotyan001/us-east-1/develop"
+description = "fmt check + validate + tflint on the eks-cluster module"
+dir = "{{ config_root }}/modules/eks-cluster"
 run = [
   "terraform fmt -check -recursive",
   "terraform validate",

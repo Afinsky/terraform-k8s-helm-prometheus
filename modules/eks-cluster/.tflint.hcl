@@ -1,7 +1,7 @@
-# develop.tfvars is a tflint-only fixture now — Terragrunt no longer reads it,
+# eks-cluster.tfvars is a tflint-only fixture now — Terragrunt no longer reads it,
 # real values live in terragrunt.hcl's `inputs` block. Keep both in sync.
 config {
-  varfile = ["develop.tfvars"]
+  varfile = ["eks-cluster.tfvars"]
 }
 
 plugin "aws" {

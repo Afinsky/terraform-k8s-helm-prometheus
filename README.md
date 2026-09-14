@@ -18,7 +18,7 @@ AWS account: abotyan001 (417886991962), region: us-east-1
 │                        groups/users/permission sets. Applies as the
 │                        static "terraform" IAM user.
 │
-└─ develop               VPC, EKS cluster, IRSA controllers, ECR, ACM,
+└─ eks-cluster          VPC, EKS cluster, IRSA controllers, ECR, ACM,
                           namespaced RBAC lab, sample apps. Applies as
                           "lab-admin" — an SSO role defined by the layer above.
 ```
@@ -36,9 +36,14 @@ permission set that becomes the `lab-admin` SSO profile everything else runs as.
   AES256-encrypted, public access blocked) the first time it's missing, via
   `--backend-bootstrap` baked into every `Makefile` command. Each layer's own state key comes
   from a sibling `state.hcl`, so migrating to Terragrunt didn't require moving any state.
-- There's no `generate "provider"` block: `develop`'s kubernetes/helm providers need live
-  `module.eks` outputs, which Terragrunt can't template statically, so `provider.tf` in each
-  layer is a hand-written, committed file.
+- There's no `generate "provider"` block: `eks-cluster`'s kubernetes/helm providers need live
+  `module.eks` outputs, which Terragrunt can't template statically, so `provider.tf` is a
+  hand-written, committed file (in `modules/eks-cluster/` — see below).
+- Both layers are thin wrappers: each `terragrunt.hcl` has no Terraform of its own, just a
+  `terraform { source = "${get_repo_root()}/modules/<name>" }` block plus `inputs`. Only
+  `modules/eks-cluster` is actually reused across accounts, though (`modules/identity-center` was
+  split out purely for the layer/module consistency, not because anything else points at it —
+  it defines the Organization itself, so it's inherently single-instance).
 
 ### `01-identity-center`
 
@@ -49,13 +54,13 @@ three groups, and the permission sets/account assignments that turn into SSO rol
   Becomes the `lab-admin` SSO profile.
 - **`EKSDev-Payments`** / **`EKSDev-Search`** — minimal IAM (just enough to find the cluster),
   assigned to `payments-devs`/`search-devs`. Real Kubernetes access comes later, from EKS access
-  entries + RBAC defined in `develop` — not from IAM.
+  entries + RBAC defined in `eks-cluster` — not from IAM.
 
 Always applies as the static `terraform` IAM user, never `lab-admin`: this stack defines that
 role, so running it under its own not-yet-revocable STS token risks a self-lockout (see the
 comment in `provider.tf`).
 
-### `develop`
+### `eks-cluster`
 
 - **VPC** (`terraform-aws-modules/vpc/aws`) — single NAT gateway, flow logs optional.
 - **EKS** (`terraform-aws-modules/eks/aws`) — one SPOT-capacity managed node group,
@@ -92,15 +97,23 @@ the live cluster; nothing here references the gitops repo.
 
 ```
 root.hcl                          # Terragrunt root config: backend, version constraints, inputs
-global.hcl                        # project_name, common_tags
+global.hcl                        # project_name, common_tags, dns_zone_* (see "eks-cluster" above)
+modules/
+  identity-center/                # all of layer 1's Terraform — see above
+  eks-cluster/                    # all of layer 2's Terraform — see above
+    unused/                       # archived alternative node-group configs (not compiled)
 accounts/
-  abotyan001/
+  abotyan001/                     # the management account
     account.hcl                   # aws_account_alias, aws_account_id
     us-east-1/
       region.hcl                  # aws_region
-      01-identity-center/         # layer 1 — see above
-      develop/                    # layer 2 — see above
-        unused/                   # archived alternative node-group configs (not compiled)
+      01-identity-center/         # layer 1 — terragrunt.hcl + state.hcl only, wires up modules/identity-center
+      eks-cluster/                # layer 2 — terragrunt.hcl + state.hcl only, wires up modules/eks-cluster
+  workloads-dev/                  # a member account vended by modules/identity-center/accounts.tf
+    account.hcl
+    us-east-1/
+      region.hcl
+      eks-cluster/                # same modules/eks-cluster, applied into this account instead
 k8s/
   manifests/                      # raw upstream YAML, decoded+applied via kubernetes_manifest
   helm/                           # helm_release values files
@@ -122,7 +135,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 | `terraform` | the actual provisioning engine |
 | `terragrunt` | layering, shared backend config, DRY inputs |
 | `tflint` | `terraform_unused_declarations` and a handful of other rules, in pre-commit |
-| `terraform-docs` | regenerates `develop/README.md`'s inputs/outputs tables |
+| `terraform-docs` | regenerates `modules/identity-center/README.md` and `modules/eks-cluster/README.md`'s inputs/outputs tables |
 | `pre-commit` | runs all of the above + `conventional-pre-commit` on every commit |
 | `awscli` | SSO login, `aws eks update-kubeconfig` |
 | `helm` / `kubectl` / `kustomize` | ad-hoc cluster debugging and rendering — also used against the parked `../argo-k8s-helm` repo |
@@ -133,7 +146,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 make setup                       # mise install
 make login                       # aws sso login --profile lab-admin
 
-make <layer> plan                # <layer> is 01-identity-center or develop
+make <layer> plan                # <layer> is 01-identity-center or eks-cluster
 make <layer> apply
 make run-all-plan                # plan every layer
 make lint                        # pre-commit run --all-files
@@ -151,8 +164,8 @@ Two AWS identities, used deliberately for different things:
   `01-identity-center`, because that stack *defines* the `lab-admin` role — running it under
   `lab-admin`'s own STS token would mean that role editing its own definition through itself.
 - **`lab-admin`** — the `PlatformAdmin` SSO permission set `01-identity-center` creates. Used by
-  every stack that *consumes* that identity instead of defining it (currently just `develop`).
+  every stack that *consumes* that identity instead of defining it (currently just `eks-cluster`).
 
 `alice`/`bob` are the SSO users representing `payments-devs`/`search-devs` for the RBAC lab in
-`develop/eks-access-lab.tf` — they get real IAM access only to `eks:DescribeCluster`/`ListClusters`;
+`eks-cluster/eks-access-lab.tf` — they get real IAM access only to `eks:DescribeCluster`/`ListClusters`;
 their actual in-cluster permissions come entirely from Kubernetes RBAC RoleBindings, not IAM.

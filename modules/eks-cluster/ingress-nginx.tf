@@ -9,7 +9,7 @@ resource "helm_release" "ingress_nginx" {
   set = [
     {
       name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/aws-load-balancer-ssl-cert"
-      value = module.acm_backend.acm_certificate_arn
+      value = aws_acm_certificate_validation.backend.certificate_arn
       type  = "string"
     }
   ]
@@ -20,6 +20,8 @@ resource "helm_release" "ingress_nginx" {
   #
   # Also wait for the AWS Load Balancer Controller: this Service carries
   # aws-load-balancer-* annotations that only that controller understands
-  # (see load-balancer-controller.tf and ingress-nginx.yaml).
-  depends_on = [module.eks, helm_release.aws_load_balancer_controller]
+  # (see load-balancer-controller.tf and ingress-nginx.yaml). And for the
+  # certificate to actually be validated (acm.tf) — ACM won't attach a
+  # PENDING_VALIDATION cert to a listener.
+  depends_on = [module.eks, helm_release.aws_load_balancer_controller, aws_acm_certificate_validation.backend]
 }

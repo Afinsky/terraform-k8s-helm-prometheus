@@ -51,7 +51,7 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
           # AdministratorAccess here mirrors what AWS's own
           # OrganizationAccountAccessRole grants by default — this account is
           # a personal lab. Narrow this (and drop ManagedPolicyArns for an
-          # inline/managed policy scoped to what `develop` actually needs)
+          # inline/managed policy scoped to what `eks-cluster` actually needs)
           # once this is more than a lab.
           ManagedPolicyArns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
         }

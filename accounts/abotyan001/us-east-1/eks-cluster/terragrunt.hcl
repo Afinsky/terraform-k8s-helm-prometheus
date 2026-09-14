@@ -1,12 +1,20 @@
 #-------------------------------------------------------------
 # terragrunt.hcl
 #
-# - configure inputs for this layer (was develop.tfvars)
+# - wire up the modules/eks-cluster module and configure its inputs (was develop.tfvars —
+#   the tflint fixture in modules/eks-cluster/ still keeps that filename)
 # - backend key comes from state.hcl (see root.hcl)
 #-------------------------------------------------------------
 
 include {
   path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  # Local path, not a versioned/remote source: this module isn't published outside this
+  # repo. It is reused, though — see accounts/workloads-dev/us-east-1/eks-cluster/terragrunt.hcl,
+  # the same module applied into a different account.
+  source = "${get_repo_root()}/modules/eks-cluster"
 }
 
 inputs = {

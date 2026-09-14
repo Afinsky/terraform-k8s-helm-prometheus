@@ -5,13 +5,13 @@
 SHELL := $(shell which bash) # set default shell
 
 # ACCOUNT selects which accounts/<alias>/us-east-1 tree a layer target resolves against.
-# eg make develop apply                      -> accounts/abotyan001/us-east-1/develop
-# eg make ACCOUNT=workloads-dev develop apply -> accounts/workloads-dev/us-east-1/develop
+# eg make eks-cluster apply                      -> accounts/abotyan001/us-east-1/eks-cluster
+# eg make ACCOUNT=workloads-dev eks-cluster apply -> accounts/workloads-dev/us-east-1/eks-cluster
 ACCOUNT ?= abotyan001
 ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
 # aws sso login profile. Only "01-identity-center" (and future consumer stacks) use it —
-# see accounts/abotyan001/us-east-1/01-identity-center/provider.tf for why "terraform"
+# see modules/identity-center/provider.tf for why "terraform"
 # (a static IAM user) is used instead everywhere the lab-admin SSO role isn't safe to run under yet.
 IAM_ROLE := lab-admin
 
@@ -35,9 +35,9 @@ help: ## Show Help
 # make run-all-apply            - apply every layer
 # ACCOUNT=<alias>               - target a member account instead of abotyan001 (default)
 #
-# eg make develop plan
+# eg make eks-cluster plan
 # eg make 01-identity-center apply
-# eg make ACCOUNT=workloads-dev develop apply
+# eg make ACCOUNT=workloads-dev eks-cluster apply
 # ----------------------------------------------------------------
 
 setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml
@@ -65,17 +65,17 @@ login: ## aws sso login (lab-admin profile)
 # create it itself (versioned, encrypted, public access blocked) the first time it's missing.
 # See root.hcl's remote_state block.
 # ----------------------------------------------------------------
-.PHONY: 01-identity-center develop
+.PHONY: 01-identity-center eks-cluster
 
 01-identity-center: ## AWS Organization, IAM Identity Center users/groups/permission sets
 	$(eval LAYER = $(ACCOUNT_DIR)/01-identity-center)
 
-develop: ## VPC, EKS, ingress-nginx, external-dns/-secrets, sample apps
-	$(eval LAYER = $(ACCOUNT_DIR)/develop)
+eks-cluster: ## VPC, EKS, ingress-nginx, external-dns/-secrets, sample apps
+	$(eval LAYER = $(ACCOUNT_DIR)/eks-cluster)
 
 # ----------------------------------------------------------------
 # Terragrunt commands
-# usage: make <layer> <command>, e.g. make develop plan
+# usage: make <layer> <command>, e.g. make eks-cluster plan
 # ----------------------------------------------------------------
 plan apply init output validate refresh import destroy force-unlock:
 	terragrunt $@ \
@@ -90,7 +90,7 @@ state-list: ## make <layer> state-list
 		--backend-bootstrap
 
 # console/providers/etc have no terragrunt shortcut — run them via `terragrunt run -- <cmd>`
-# eg make develop cmd CMD=console
+# eg make eks-cluster cmd CMD=console
 cmd: ## make <layer> cmd CMD="console"
 	terragrunt run \
 		--working-dir ./$(LAYER) \

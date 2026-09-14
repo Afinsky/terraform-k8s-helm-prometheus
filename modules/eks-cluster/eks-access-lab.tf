@@ -13,11 +13,15 @@
 locals {
   # SSO role names carry a random suffix that changes if the permission
   # set's account assignment is ever recreated - look roles up by name
-  # regex instead of hardcoding the ARN.
+  # regex instead of hardcoding the ARN. Permission set names come from
+  # modules/identity-center/permission_sets.tf: platform-admin/devops-admin/
+  # developer (there's no more per-team Payments/Search split there - payments
+  # and search below just keep the prior slots so this lab's namespace/RBAC
+  # shape below didn't need touching too).
   sso_role_patterns = {
-    platform_admin = "AWSReservedSSO_PlatformAdmin_.*"
-    payments       = "AWSReservedSSO_EKSDev-Payments_.*"
-    search         = "AWSReservedSSO_EKSDev-Search_.*"
+    platform_admin = "AWSReservedSSO_platform-admin_.*"
+    payments       = "AWSReservedSSO_devops-admin_.*"
+    search         = "AWSReservedSSO_developer_.*"
   }
 }
 
@@ -32,7 +36,12 @@ locals {
   # at plan time than silently grant access via the wrong role.
   sso_role_arn = { for k, v in data.aws_iam_roles.sso : k => one(v.arns) }
 
-  lab_access_entries = {
+  # Not every permission set above is assigned to every account this module
+  # runs in (platform-admin, in particular, is deliberately scoped to just
+  # the management account - see modules/identity-center/permission_sets.tf) -
+  # filtered out below rather than erroring, so this file works unmodified
+  # in an account with only 2 of the 3 roles.
+  lab_access_entries_all = {
     "eks-access-lab-platform-admin" = {
       kubernetes_groups = []
       principal_arn     = local.sso_role_arn.platform_admin
@@ -67,6 +76,10 @@ locals {
       kubernetes_groups = ["search-devs"]
       principal_arn     = local.sso_role_arn.search
     }
+  }
+
+  lab_access_entries = {
+    for k, v in local.lab_access_entries_all : k => v if v.principal_arn != null
   }
 }
 
