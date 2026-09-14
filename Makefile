@@ -25,6 +25,15 @@ help: ## Show Help
 		sort | \
 		awk -F ':.*?## ' 'NF==2 {printf "\033[36m  %-25s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: accounts
+accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, and their layers
+	@for dir in accounts/*/; do \
+		alias=$$(basename "$$dir"); \
+		id=$$(grep -oE 'aws_account_id[[:space:]]*=[[:space:]]*"[^"]*"' "$$dir/account.hcl" 2>/dev/null | grep -oE '"[^"]*"' | tr -d '"'); \
+		layers=$$(find "$$dir" -mindepth 3 -maxdepth 3 -name terragrunt.hcl | sed "s#$$dir##;s#us-east-1/##;s#/terragrunt.hcl##" | sort | tr '\n' ' '); \
+		printf "\033[36m  %-16s\033[0m %-16s %s\n" "$$alias" "$${id:-?}" "$$layers"; \
+	done
+
 # ----------------------------------------------------------------
 # usage:
 #
