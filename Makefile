@@ -10,10 +10,10 @@ SHELL := $(shell which bash) # set default shell
 ACCOUNT ?= abotyan001
 ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
-# aws sso login profile. Only "01-identity-center" (and future consumer stacks) use it —
-# see modules/identity-center/provider.tf for why "terraform"
-# (a static IAM user) is used instead everywhere the lab-admin SSO role isn't safe to run under yet.
-IAM_ROLE := lab-admin
+# aws sso login profile for the default ACCOUNT (abotyan001). "01-identity-center" doesn't
+# use it — see modules/identity-center/provider.tf for why "terraform" (a static IAM user)
+# is used there instead. Naming convention: <account-alias>-<role-name> (~/.aws/config).
+IAM_ROLE := abotyan001-devops-admin
 
 LOCK_ID :=
 
@@ -38,7 +38,7 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # usage:
 #
 # make setup                    - install terraform/terragrunt/etc via mise
-# make login                    - log into AWS via AWS SSO (lab-admin profile)
+# make login                    - log into AWS via AWS SSO (IAM_ROLE profile, default abotyan001-devops-admin)
 # make <layer> <command>        - run a Terragrunt command against one layer
 # make run-all-plan             - plan every layer
 # make run-all-apply            - apply every layer (eks-cluster before eks-workloads)
@@ -69,7 +69,7 @@ lint: ## run all pre-commit checks across the repo
 # Use aws-sso-util
 # https://github.com/benkehoe/aws-sso-util
 # ----------------------------------------------------------------
-login: ## aws sso login (lab-admin profile)
+login: ## aws sso login (IAM_ROLE profile, default abotyan001-devops-admin)
 	aws sso login --profile $(IAM_ROLE)
 
 # ----------------------------------------------------------------
@@ -94,7 +94,7 @@ eks-workloads: ## ingress-nginx, external-dns/-secrets, lb-controller, sample ap
 # Terragrunt commands
 # usage: make <layer> <command>, e.g. make eks-cluster plan
 # ----------------------------------------------------------------
-plan apply init output validate refresh import destroy force-unlock:
+plan apply init output validate refresh import destroy:
 	terragrunt $@ \
 		--working-dir ./$(LAYER) \
 		--non-interactive \

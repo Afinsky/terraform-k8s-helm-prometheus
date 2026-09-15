@@ -72,7 +72,13 @@ module "eks" {
       # ARN that doesn't exist ("invalid principal"), which silently meant
       # *no one* had cluster-admin here.
       "devops-admin" = {
-        kubernetes_groups = []
+        # "devops-admins" (matches the Identity Center group name) is also a
+        # real Kubernetes RBAC group here - see
+        # modules/eks-workloads/rbac.tf's ClusterRoleBinding to cluster-admin.
+        # The AWS access policy below is separate/redundant with that (EKS's
+        # own permission system, not native RBAC) but harmless to keep - it's
+        # what shows this principal as "admin" in the EKS console.
+        kubernetes_groups = ["devops-admins"]
         principal_arn     = local.sso_role_arn.devops_admin
         policy_associations = {
           admin = {

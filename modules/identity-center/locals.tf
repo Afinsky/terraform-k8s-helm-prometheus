@@ -21,8 +21,23 @@ locals {
   groups = toset(["platform-admins", "devops-admins", "developers", "qa-testers"])
 
   users = {
-    aliaksei = { given_name = "Aliaksei", family_name = "Admin", email = local.alias_email.admin, group = "devops-admins" }
-    alice    = { given_name = "Alice", family_name = "Developer", email = local.alias_email.alice, group = "developers" }
-    bob      = { given_name = "Bob", family_name = "Tester", email = local.alias_email.bob, group = "qa-testers" }
+    aliaksei = {
+      given_name  = "Aliaksei",
+      family_name = "Admin",
+      email       = local.alias_email.admin,
+      group       = "devops-admins"
+    }
+    alice = {
+      given_name  = "Alice",
+      family_name = "Developer",
+      email       = local.alias_email.alice,
+      group       = "developers"
+    }
+    bob = {
+      given_name  = "Bob",
+      family_name = "Tester",
+      email       = local.alias_email.bob,
+      group       = "qa-testers"
+    }
   }
 }

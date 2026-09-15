@@ -20,7 +20,7 @@ inputs = {
   # SSO profile for account_id 841775659851, role "devops-admin" — that
   # permission set is assigned org-wide by modules/identity-center/permission_sets.tf,
   # so no new IAM role/trust policy was needed for this account.
-  profile     = "workloads-dev-admin"
+  profile     = "workloads-dev-devops-admin"
   environment = "dev"
   region      = "us-east-1"
   repo_root   = get_repo_root()

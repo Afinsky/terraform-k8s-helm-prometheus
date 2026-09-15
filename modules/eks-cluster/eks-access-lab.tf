@@ -1,14 +1,15 @@
 # PLAT-101 lab, Phase 3: EKS access via IAM Identity Center SSO roles +
-# Kubernetes RBAC, instead of static IAM users. Namespaces payments-dev /
-# payments-prod / search-dev stand in for separate environments per the lab
-# brief. This reuses the existing dev cluster instead of a dedicated one -
-# same account/region, and the access-entry/RBAC pattern doesn't need its
-# own infrastructure to be meaningful.
+# Kubernetes RBAC, instead of static IAM users. search-dev stands in for a
+# separate environment per the lab brief - payments-dev/payments-prod are now
+# unused (there's no permission set left mapped to a "payments" persona,
+# see permission_sets.tf's platform-admin/devops-admin/developer). This
+# reuses the existing dev cluster instead of a dedicated one - same
+# account/region, and the access-entry/RBAC pattern doesn't need its own
+# infrastructure to be meaningful.
 #
-# Identity side (groups/users/permission sets) lives in a separate Terraform
-# stack: eks-access-lab/01-identity-center. This file only consumes what it
-# creates, by looking up the resulting IAM roles - no remote state, no
-# hardcoded ARNs.
+# Identity side (groups/users/permission sets) lives in modules/identity-center.
+# This file only consumes what it creates, by looking up the resulting IAM
+# roles - no remote state, no hardcoded ARNs.
 
 locals {
   # SSO role names carry a random suffix that changes if the permission
@@ -59,10 +60,14 @@ locals {
         }
       }
     }
-    # bob: no access policy at all here - every right he has in search-dev
-    # comes from the RoleBinding below, purely via RBAC.
-    "eks-access-lab-search" = {
-      kubernetes_groups = ["search-devs"]
+    # alice (member of the "developers" Identity Center group, which is what
+    # the "developer" permission set is assigned to - see
+    # modules/identity-center/{sso,permission_sets}.tf): no access policy at
+    # all here - every right she has in search-dev comes from the RoleBinding
+    # below, purely via RBAC. "developers" is the real Identity Center group
+    # name - the old "search-devs" name didn't correspond to anything.
+    "eks-access-lab-developer" = {
+      kubernetes_groups = ["developers"]
       principal_arn     = local.sso_role_arn.developer
     }
   }

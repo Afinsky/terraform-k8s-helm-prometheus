@@ -1,5 +1,5 @@
 # New AWS accounts vended into this Organization. Same rule as the rest of
-# this stack (see provider.tf): applies under "terraform", not "lab-admin" —
+# this stack (see provider.tf): applies under "terraform", not "devops-admin" —
 # this is still the identity/org root layer, not a consumer of it.
 # `aws_organizations_account` only works when the caller's credentials
 # belong to the Organization's management account, which is this same
