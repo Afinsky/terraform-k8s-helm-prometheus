@@ -39,8 +39,8 @@ Then by hand in the console (region `us-east-1`):
 #    Without this, aws_cloudformation_stack_set.terraform_target fails with:
 #    "ValidationError: You must enable organizations access to operate a
 #    service managed stack set". Run once, from the management account:
-aws cloudformation describe-organizations-access --profile lab-admin --region us-east-1
-aws cloudformation activate-organizations-access --profile lab-admin --region us-east-1
+aws cloudformation describe-organizations-access --profile abotyan001-devops-admin --region us-east-1
+aws cloudformation activate-organizations-access --profile abotyan001-devops-admin --region us-east-1
 
 # 4. Everything else: groups, users, memberships, PlatformAdmin, EKSDev-*,
 #    and the terraform-target StackSet.
@@ -64,4 +64,4 @@ those first.
 
 See `variables.tf`. `profile` is the same IAM profile used by `../eks-cluster`'s
 `terragrunt.hcl` (e.g. `terraform`): at the time of the first apply, the
-`lab-admin` SSO profile doesn't exist yet.
+`abotyan001-devops-admin` SSO profile doesn't exist yet.

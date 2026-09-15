@@ -63,21 +63,23 @@ module "eks" {
 
   access_entries = merge(
     {
-      "terraform" = {
-        kubernetes_groups = []
-        principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/Terraform"
-        policy_associations = {
-          admin = {
-            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-            access_scope = {
-              type = "cluster"
-            }
-          }
-        }
-      }
-      "aliaksei" = {
-        kubernetes_groups = [] # Added for consistency with the other access entries, but not strictly necessary for this entry
-        principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/aliaksei"
+      # The identity that actually applies this stack (see terragrunt.hcl's
+      # `profile`) and the day-to-day operator identity, in every account -
+      # both are the same SSO role. Previously this granted admin to
+      # "arn:...:user/Terraform" / "arn:...:user/aliaksei", static IAM users
+      # that predate the move to Identity Center/SSO and don't actually exist
+      # in any account anymore - AWS rejects an access entry for a principal
+      # ARN that doesn't exist ("invalid principal"), which silently meant
+      # *no one* had cluster-admin here.
+      "devops-admin" = {
+        # "devops-admins" (matches the Identity Center group name) is also a
+        # real Kubernetes RBAC group here - see
+        # modules/eks-workloads/rbac.tf's ClusterRoleBinding to cluster-admin.
+        # The AWS access policy below is separate/redundant with that (EKS's
+        # own permission system, not native RBAC) but harmless to keep - it's
+        # what shows this principal as "admin" in the EKS console.
+        kubernetes_groups = ["devops-admins"]
+        principal_arn     = local.sso_role_arn.devops_admin
         policy_associations = {
           admin = {
             policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
@@ -102,9 +104,8 @@ module "eks" {
         }
       }
     },
-    # PLAT-101 Phase 3: SSO roles from the eks-access-lab/01-identity-center stack.
-    # See eks-access-lab.tf.
-    local.lab_access_entries
+    # PLAT-101 Phase 3: SSO roles from modules/identity-center. See eks-access.tf.
+    local.sso_access_entries
   )
 
   tags = local.common_tags

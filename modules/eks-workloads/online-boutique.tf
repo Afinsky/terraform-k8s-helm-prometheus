@@ -31,7 +31,6 @@ resource "kubernetes_manifest" "online_boutique" {
   # uses ingressClassName "nginx", so ingress-nginx's controller must exist
   # first.
   depends_on = [
-    module.eks,
     helm_release.ingress_nginx,
   ]
 }

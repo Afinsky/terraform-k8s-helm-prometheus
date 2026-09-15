@@ -23,13 +23,13 @@ resource "aws_iam_role" "external_secrets" {
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "${module.eks.oidc_provider_arn}"
+        "Federated": "${var.oidc_provider_arn}"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "${module.eks.oidc_provider}:sub": "system:serviceaccount:external-secrets:external-secrets",
-          "${module.eks.oidc_provider}:aud": "sts.amazonaws.com"
+          "${var.oidc_provider}:sub": "system:serviceaccount:external-secrets:external-secrets",
+          "${var.oidc_provider}:aud": "sts.amazonaws.com"
         }
       }
     }
@@ -95,7 +95,7 @@ resource "helm_release" "external_secrets" {
   # cluster-wide mutating webhook on Service objects, and this chart creates
   # its own webhook Service - without this dependency the create can race
   # ahead and hit "no endpoints available" on that webhook.
-  depends_on = [module.eks, aws_iam_role_policy_attachment.external_secrets, helm_release.aws_load_balancer_controller]
+  depends_on = [aws_iam_role_policy_attachment.external_secrets, helm_release.aws_load_balancer_controller]
 }
 
 # ClusterSecretStore, applied the same way app.tf applies app.yaml: decode
@@ -117,5 +117,5 @@ resource "kubernetes_manifest" "external_secrets_cluster_store" {
   # The ClusterSecretStore CRD only exists once the chart's CRDs are
   # installed, and the ServiceAccount it references (external-secrets) must
   # already exist with its IRSA annotation.
-  depends_on = [module.eks, helm_release.external_secrets]
+  depends_on = [helm_release.external_secrets]
 }

@@ -25,16 +25,8 @@ provider "aws" {
   }
 }
 
-provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-  token                  = data.aws_eks_cluster_auth.eks.token
-}
-
-provider "helm" {
-  kubernetes = {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    token                  = data.aws_eks_cluster_auth.eks.token
-  }
-}
+# No kubernetes/helm providers here - this module is pure AWS/VPC/EKS-control-plane
+# now (see modules/eks-workloads for everything that talks to the Kubernetes API).
+# That split is deliberate: it means `terragrunt destroy` on this layer never
+# touches a Service/Ingress/helm_release, so it can't race the AWS Load Balancer
+# Controller or external-dns while they're mid-cleanup of their own AWS resources.

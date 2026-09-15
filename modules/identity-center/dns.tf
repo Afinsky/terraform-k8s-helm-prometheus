@@ -65,6 +65,10 @@ resource "aws_iam_role_policy" "dns_zone_writer" {
           "route53:ChangeResourceRecordSets",
           "route53:ListResourceRecordSets",
           "route53:ListTagsForResources",
+          # aws_route53_record (used by modules/eks-cluster's ACM DNS
+          # validation) reads the zone before writing to it - missed this the
+          # first time around, surfaced as an AccessDenied on GetHostedZone.
+          "route53:GetHostedZone",
         ]
         Resource = ["arn:aws:route53:::hostedzone/${data.aws_route53_zone.this.zone_id}"]
       },
@@ -72,6 +76,16 @@ resource "aws_iam_role_policy" "dns_zone_writer" {
         Effect   = "Allow"
         Action   = ["route53:ListHostedZones"]
         Resource = ["*"]
+      },
+      {
+        # aws_route53_record waits for the change to propagate by polling
+        # GetChange on the change ID ChangeResourceRecordSets returns -
+        # that's a different resource type (arn:...:change/*, not the zone
+        # ARN) with no way to scope it to just this zone's changes, since
+        # change IDs aren't known ahead of time.
+        Effect   = "Allow"
+        Action   = ["route53:GetChange"]
+        Resource = ["arn:aws:route53:::change/*"]
       },
     ]
   })

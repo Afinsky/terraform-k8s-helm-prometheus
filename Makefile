@@ -10,10 +10,10 @@ SHELL := $(shell which bash) # set default shell
 ACCOUNT ?= abotyan001
 ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
-# aws sso login profile. Only "01-identity-center" (and future consumer stacks) use it —
-# see modules/identity-center/provider.tf for why "terraform"
-# (a static IAM user) is used instead everywhere the lab-admin SSO role isn't safe to run under yet.
-IAM_ROLE := lab-admin
+# aws sso login profile for the default ACCOUNT (abotyan001). "01-identity-center" doesn't
+# use it — see modules/identity-center/provider.tf for why "terraform" (a static IAM user)
+# is used there instead. Naming convention: <account-alias>-<role-name> (~/.aws/config).
+IAM_ROLE := abotyan001-devops-admin
 
 LOCK_ID :=
 
@@ -38,15 +38,20 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # usage:
 #
 # make setup                    - install terraform/terragrunt/etc via mise
-# make login                    - log into AWS via AWS SSO (lab-admin profile)
+# make login                    - log into AWS via AWS SSO (IAM_ROLE profile, default abotyan001-devops-admin)
 # make <layer> <command>        - run a Terragrunt command against one layer
 # make run-all-plan             - plan every layer
-# make run-all-apply            - apply every layer
+# make run-all-apply            - apply every layer (eks-cluster before eks-workloads)
+# make run-all-destroy          - destroy every layer (eks-workloads before eks-cluster)
+# make destroy-safe             - like run-all-destroy for the eks-* pair, but waits for
+#                                  eks-workloads' load balancers to actually clear first
 # ACCOUNT=<alias>               - target a member account instead of abotyan001 (default)
 #
 # eg make eks-cluster plan
+# eg make eks-workloads apply
 # eg make 01-identity-center apply
 # eg make ACCOUNT=workloads-dev eks-cluster apply
+# eg make ACCOUNT=workloads-dev destroy-safe
 # ----------------------------------------------------------------
 
 setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml
@@ -64,7 +69,7 @@ lint: ## run all pre-commit checks across the repo
 # Use aws-sso-util
 # https://github.com/benkehoe/aws-sso-util
 # ----------------------------------------------------------------
-login: ## aws sso login (lab-admin profile)
+login: ## aws sso login (IAM_ROLE profile, default abotyan001-devops-admin)
 	aws sso login --profile $(IAM_ROLE)
 
 # ----------------------------------------------------------------
@@ -74,19 +79,22 @@ login: ## aws sso login (lab-admin profile)
 # create it itself (versioned, encrypted, public access blocked) the first time it's missing.
 # See root.hcl's remote_state block.
 # ----------------------------------------------------------------
-.PHONY: 01-identity-center eks-cluster
+.PHONY: 01-identity-center eks-cluster eks-workloads
 
 01-identity-center: ## AWS Organization, IAM Identity Center users/groups/permission sets
 	$(eval LAYER = $(ACCOUNT_DIR)/01-identity-center)
 
-eks-cluster: ## VPC, EKS, ingress-nginx, external-dns/-secrets, sample apps
+eks-cluster: ## VPC, EKS control plane/node groups, ACM (pure AWS, no k8s resources)
 	$(eval LAYER = $(ACCOUNT_DIR)/eks-cluster)
+
+eks-workloads: ## ingress-nginx, external-dns/-secrets, lb-controller, sample apps - depends on eks-cluster
+	$(eval LAYER = $(ACCOUNT_DIR)/eks-workloads)
 
 # ----------------------------------------------------------------
 # Terragrunt commands
 # usage: make <layer> <command>, e.g. make eks-cluster plan
 # ----------------------------------------------------------------
-plan apply init output validate refresh import destroy force-unlock:
+plan apply init output validate refresh import destroy:
 	terragrunt $@ \
 		--working-dir ./$(LAYER) \
 		--non-interactive \
@@ -132,6 +140,13 @@ run-all-apply: ## apply every layer under $(ACCOUNT_DIR)
 		--working-dir ./$(ACCOUNT_DIR) \
 		--non-interactive \
 		--backend-bootstrap
+
+force-unlock: ## make <layer> force-unlock LOCK_ID=<id>
+	terragrunt force-unlock \
+		--working-dir ./$(LAYER) \
+		--non-interactive \
+		--backend-bootstrap \
+		$(LOCK_ID)
 
 # ----------------------------------------------------------------
 # utils

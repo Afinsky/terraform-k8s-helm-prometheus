@@ -4,7 +4,7 @@ variable "environment" {
 }
 
 variable "profile" {
-  description = "AWS Profile name. Always \"terraform\" (static IAM user) for this stack — it defines the lab-admin SSO role itself, so it can't safely run under it. See provider.tf."
+  description = "AWS Profile name. Always \"terraform\" (static IAM user) for this stack — it defines the devops-admin SSO role itself, so it can't safely run under it. See provider.tf."
   type        = string
 }
 
