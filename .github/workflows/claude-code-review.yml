@@ -27,4 +27,7 @@ jobs:
             and cross-account role assumptions), and adherence to the conventions
             in CLAUDE.md. Skip pure style nits that tflint/terraform fmt already
             catch. Post findings as a PR review comment.
-          claude_args: "--allowed-tools Bash(terraform:*),Bash(terragrunt:*)"
+          # No claude_args/--allowed-tools override: it REPLACES the action's default tool
+          # set rather than extending it, which also strips the tool the action itself needs
+          # to post the review comment — a prior "Bash(terraform:*),Bash(terragrunt:*)" value
+          # here ran real turns (real cost) but posted nothing, 9 silent permission denials.
