@@ -77,6 +77,16 @@ resource "aws_iam_role_policy" "dns_zone_writer" {
         Action   = ["route53:ListHostedZones"]
         Resource = ["*"]
       },
+      {
+        # aws_route53_record waits for the change to propagate by polling
+        # GetChange on the change ID ChangeResourceRecordSets returns -
+        # that's a different resource type (arn:...:change/*, not the zone
+        # ARN) with no way to scope it to just this zone's changes, since
+        # change IDs aren't known ahead of time.
+        Effect   = "Allow"
+        Action   = ["route53:GetChange"]
+        Resource = ["arn:aws:route53:::change/*"]
+      },
     ]
   })
 }
