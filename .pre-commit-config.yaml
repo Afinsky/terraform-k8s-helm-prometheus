@@ -52,19 +52,10 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
-  # gitleaks/gitleaks's own pre-commit hook needs `language: golang` (builds the
-  # binary from source in a fresh env on every machine/CI run instead of reusing
-  # one cached binary) — same problem as mxab/pre-commit-trivy below, same fix:
-  # call the mise-pinned binary directly. `protect --staged` matches the official
-  # hook's own entry, scoped to the staged diff (fast, and the only thing that
-  # can actually get committed).
-  - repo: local
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
     hooks:
       - id: gitleaks
-        name: gitleaks
-        language: system
-        entry: gitleaks protect --staged --redact --verbose
-        pass_filenames: false
 
   # mxab/pre-commit-trivy only ships "-docker" hook variants (language: docker_image), which
   # need the Docker daemon running for every commit. These call the `trivy` binary directly
