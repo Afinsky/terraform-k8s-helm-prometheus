@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.4...v1.2.5) (2026-09-15)
+
+
+### Bug Fixes
+
+* split eks-cluster into eks-cluster + eks-workloads, align SSO naming, fix VPC DNS ([abd6093](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/abd6093976d6ce2589a1d8986a9b8ef7ae383b01))
+
 ## [1.2.4](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.3...v1.2.4) (2026-09-14)
 
 
