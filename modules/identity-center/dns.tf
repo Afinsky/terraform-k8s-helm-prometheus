@@ -65,6 +65,10 @@ resource "aws_iam_role_policy" "dns_zone_writer" {
           "route53:ChangeResourceRecordSets",
           "route53:ListResourceRecordSets",
           "route53:ListTagsForResources",
+          # aws_route53_record (used by modules/eks-cluster's ACM DNS
+          # validation) reads the zone before writing to it - missed this the
+          # first time around, surfaced as an AccessDenied on GetHostedZone.
+          "route53:GetHostedZone",
         ]
         Resource = ["arn:aws:route53:::hostedzone/${data.aws_route53_zone.this.zone_id}"]
       },

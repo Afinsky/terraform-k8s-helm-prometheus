@@ -63,21 +63,17 @@ module "eks" {
 
   access_entries = merge(
     {
-      "terraform" = {
+      # The identity that actually applies this stack (see terragrunt.hcl's
+      # `profile`) and the day-to-day operator identity, in every account -
+      # both are the same SSO role. Previously this granted admin to
+      # "arn:...:user/Terraform" / "arn:...:user/aliaksei", static IAM users
+      # that predate the move to Identity Center/SSO and don't actually exist
+      # in any account anymore - AWS rejects an access entry for a principal
+      # ARN that doesn't exist ("invalid principal"), which silently meant
+      # *no one* had cluster-admin here.
+      "devops-admin" = {
         kubernetes_groups = []
-        principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/Terraform"
-        policy_associations = {
-          admin = {
-            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-            access_scope = {
-              type = "cluster"
-            }
-          }
-        }
-      }
-      "aliaksei" = {
-        kubernetes_groups = [] # Added for consistency with the other access entries, but not strictly necessary for this entry
-        principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/aliaksei"
+        principal_arn     = local.sso_role_arn.devops_admin
         policy_associations = {
           admin = {
             policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"

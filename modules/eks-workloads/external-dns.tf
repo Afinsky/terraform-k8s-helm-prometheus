@@ -21,13 +21,13 @@ resource "aws_iam_role" "external_dns" {
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "${module.eks.oidc_provider_arn}"
+        "Federated": "${var.oidc_provider_arn}"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "${module.eks.oidc_provider}:sub": "system:serviceaccount:external-dns:external-dns",
-          "${module.eks.oidc_provider}:aud": "sts.amazonaws.com"
+          "${var.oidc_provider}:sub": "system:serviceaccount:external-dns:external-dns",
+          "${var.oidc_provider}:aud": "sts.amazonaws.com"
         }
       }
     }
@@ -80,7 +80,7 @@ resource "helm_release" "external_dns" {
     },
     {
       name  = "txtOwnerId"
-      value = module.eks.cluster_name
+      value = var.cluster_name
     },
     {
       # Flag name per `external-dns --help` as of app version v0.21.0 (pinned
@@ -95,7 +95,7 @@ resource "helm_release" "external_dns" {
   set_list = [
     {
       name  = "domainFilters"
-      value = [local.zone_name]
+      value = [var.dns_zone_name]
     }
   ]
 
@@ -104,5 +104,13 @@ resource "helm_release" "external_dns" {
   # start publishing LB status onto each Ingress (which external-dns then
   # reads), and its IAM role needs to be assumable before it can call
   # Route53 at all.
-  depends_on = [module.eks, helm_release.ingress_nginx, aws_iam_role_policy.external_dns_assume_dns]
+  #
+  # Destroy-time note: unlike ingress-nginx/lb-controller, there's no
+  # finalizer-based mechanism forcing Terraform to wait for external-dns to
+  # actually remove a Route53 record before this release is considered
+  # destroyed - it just runs on its own poll interval (default ~1 min).
+  # A record can outlive the destroy by a few minutes; harmless (Route53
+  # records don't block VPC/subnet teardown the way orphaned ALB/NLB ENIs
+  # do), and `policy: sync` cleans it up on the next apply regardless.
+  depends_on = [helm_release.ingress_nginx, aws_iam_role_policy.external_dns_assume_dns]
 }

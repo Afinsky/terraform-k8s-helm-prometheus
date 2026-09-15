@@ -15,13 +15,11 @@ locals {
   # set's account assignment is ever recreated - look roles up by name
   # regex instead of hardcoding the ARN. Permission set names come from
   # modules/identity-center/permission_sets.tf: platform-admin/devops-admin/
-  # developer (there's no more per-team Payments/Search split there - payments
-  # and search below just keep the prior slots so this lab's namespace/RBAC
-  # shape below didn't need touching too).
+  # developer.
   sso_role_patterns = {
     platform_admin = "AWSReservedSSO_platform-admin_.*"
-    payments       = "AWSReservedSSO_devops-admin_.*"
-    search         = "AWSReservedSSO_developer_.*"
+    devops_admin   = "AWSReservedSSO_devops-admin_.*"
+    developer      = "AWSReservedSSO_developer_.*"
   }
 }
 
@@ -41,6 +39,13 @@ locals {
   # the management account - see modules/identity-center/permission_sets.tf) -
   # filtered out below rather than erroring, so this file works unmodified
   # in an account with only 2 of the 3 roles.
+  #
+  # devops-admin itself is NOT one of these - it's the real day-to-day admin
+  # identity (permission_sets.tf grants it in every account), so it gets a
+  # genuine cluster-admin access entry directly in eks.tf instead of a
+  # namespace-scoped lab persona here. A principal can only have one access
+  # entry per cluster - reusing it for a lab persona here would conflict
+  # with that entry.
   lab_access_entries_all = {
     "eks-access-lab-platform-admin" = {
       kubernetes_groups = []
@@ -54,27 +59,11 @@ locals {
         }
       }
     }
-    # alice: edit in payments-dev via an AWS access policy, plus the
-    # payments-devs kubernetes_groups membership that the view RoleBinding
-    # below (in payments-prod) targets.
-    "eks-access-lab-payments" = {
-      kubernetes_groups = ["payments-devs"]
-      principal_arn     = local.sso_role_arn.payments
-      policy_associations = {
-        edit = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSEditPolicy"
-          access_scope = {
-            type       = "namespace"
-            namespaces = ["payments-dev"]
-          }
-        }
-      }
-    }
     # bob: no access policy at all here - every right he has in search-dev
     # comes from the RoleBinding below, purely via RBAC.
     "eks-access-lab-search" = {
       kubernetes_groups = ["search-devs"]
-      principal_arn     = local.sso_role_arn.search
+      principal_arn     = local.sso_role_arn.developer
     }
   }
 
@@ -83,32 +72,6 @@ locals {
   }
 }
 
-# Namespaces standing in for "environments", and the RBAC RoleBindings that
-# pair with the SSO access entries above. Same decode-and-apply pattern as
-# app.tf/online-boutique.tf: raw YAML lives in k8s/manifests/, don't
-# hand-write kubernetes_manifest blocks for it. Split into two files/
-# resources (rather than one) so the depends_on below can guarantee the
-# namespaces exist before Kubernetes tries to create RoleBindings inside
-# them - kubernetes_manifest gives no ordering between count instances of
-# the same resource on its own.
-locals {
-  eks_access_lab_namespaces_raw_yaml = file("${var.repo_root}/k8s/manifests/eks-access-lab-namespaces.yaml")
-  eks_access_lab_namespaces          = provider::kubernetes::manifest_decode_multi(local.eks_access_lab_namespaces_raw_yaml)
-
-  eks_access_lab_rolebindings_raw_yaml = file("${var.repo_root}/k8s/manifests/eks-access-lab-rolebindings.yaml")
-  eks_access_lab_rolebindings          = provider::kubernetes::manifest_decode_multi(local.eks_access_lab_rolebindings_raw_yaml)
-}
-
-resource "kubernetes_manifest" "eks_access_lab_namespaces" {
-  count    = length(local.eks_access_lab_namespaces)
-  manifest = local.eks_access_lab_namespaces[count.index]
-
-  depends_on = [module.eks]
-}
-
-resource "kubernetes_manifest" "eks_access_lab_rolebindings" {
-  count    = length(local.eks_access_lab_rolebindings)
-  manifest = local.eks_access_lab_rolebindings[count.index]
-
-  depends_on = [kubernetes_manifest.eks_access_lab_namespaces]
-}
+# The namespaces standing in for "environments" and the RBAC RoleBindings
+# that pair with the access entries above are Kubernetes-side, not
+# AWS-IAM-side — see modules/eks-workloads/eks-access-lab.tf.

@@ -26,7 +26,6 @@ resource "kubernetes_manifest" "app" {
   # ExternalSecret CRD and the ClusterSecretStore it references to exist
   # first (see external-secrets.tf).
   depends_on = [
-    module.eks,
     helm_release.ingress_nginx,
     helm_release.external_secrets,
     kubernetes_manifest.external_secrets_cluster_store,

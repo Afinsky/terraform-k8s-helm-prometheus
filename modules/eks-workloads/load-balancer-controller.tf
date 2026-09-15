@@ -21,13 +21,13 @@ resource "aws_iam_role" "lb_controller" {
     {
       "Effect": "Allow",
       "Principal": {
-        "Federated": "${module.eks.oidc_provider_arn}"
+        "Federated": "${var.oidc_provider_arn}"
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "${module.eks.oidc_provider}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
-          "${module.eks.oidc_provider}:aud": "sts.amazonaws.com"
+          "${var.oidc_provider}:sub": "system:serviceaccount:kube-system:aws-load-balancer-controller",
+          "${var.oidc_provider}:aud": "sts.amazonaws.com"
         }
       }
     }
@@ -66,10 +66,21 @@ resource "helm_release" "aws_load_balancer_controller" {
   # no new required IAM permissions, and it needs Kubernetes 1.22+ (cluster
   # runs 1.36). Re-run that helm search before every future version bump.
 
+  # Destroy-time safety: on `terraform destroy`, this release's own pod is
+  # what actually deprovisions any ALB/NLB it created (reacting to the
+  # Service/Ingress deletion in ingress-nginx.tf, which is destroyed before
+  # this one - see that file's depends_on). The default 300s timeout can be
+  # shorter than an NLB/ALB's own target-group deregistration delay (also
+  # 300s by default), so a slow deprovision can outlast it and get orphaned -
+  # its ENIs then block the VPC/subnet destroy in modules/eks-cluster. wait
+  # is already the provider default (true); set explicitly for clarity.
+  wait    = true
+  timeout = 600
+
   set = [
     {
       name  = "clusterName"
-      value = module.eks.cluster_name
+      value = var.cluster_name
     },
     {
       name  = "region"
@@ -77,7 +88,7 @@ resource "helm_release" "aws_load_balancer_controller" {
     },
     {
       name  = "vpcId"
-      value = module.vpc.vpc_id
+      value = var.vpc_id
     },
     {
       name  = "serviceAccount.create"
@@ -94,7 +105,5 @@ resource "helm_release" "aws_load_balancer_controller" {
     }
   ]
 
-  # Same access-entry ordering constraint as the ingress-nginx release: the
-  # helm provider must be able to reach the API server as an admin principal.
-  depends_on = [module.eks, module.vpc, aws_iam_role_policy_attachment.lb_controller]
+  depends_on = [aws_iam_role_policy_attachment.lb_controller]
 }
