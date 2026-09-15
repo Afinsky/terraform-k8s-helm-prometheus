@@ -10,8 +10,12 @@ module "vpc" {
   create_database_subnet_group  = false
   manage_default_route_table    = false
   manage_default_security_group = false
-  enable_dns_hostnames          = false
-  map_public_ip_on_launch       = true
+  # Required for a private EKS API endpoint to actually resolve to a
+  # VPC-reachable address (AWS requires both enable_dns_support AND
+  # enable_dns_hostnames = true) - false here caused nodes to fall back to
+  # public/unreachable DNS answers and time out joining the cluster.
+  enable_dns_hostnames    = true
+  map_public_ip_on_launch = true
   #Note that the order of the list of availability zones is associated with the order of the list of subnets
   cidr             = local.vpc.homelab.cidr
   azs              = local.vpc.homelab.azs
