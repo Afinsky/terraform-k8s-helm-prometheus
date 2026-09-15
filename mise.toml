@@ -24,6 +24,11 @@ terragrunt     = "1.0"
 # binary directly — no Docker daemon needed (unlike mxab/pre-commit-trivy's own hooks,
 # which only ship "-docker" variants).
 trivy          = "0.74.0"
+# local pre-commit hook `gitleaks` in .pre-commit-config.yaml calls this binary
+# directly, same reasoning as trivy above — the official gitleaks/gitleaks
+# pre-commit hook needs `language: golang` (builds from source on every fresh
+# pre-commit env instead of using one pinned, cached binary).
+gitleaks       = "8.24.2"
 
 # --- GitOps side (../argo-k8s-helm — parked experiment, not in use) -------
 # `helm template` / `helm search repo` sanity checks against that repo's gitops/.
