@@ -2,8 +2,9 @@
 
 Everything that talks to the Kubernetes API for the cluster `modules/eks-cluster`
 creates — IRSA controllers (aws-load-balancer-controller, external-dns,
-external-secrets), ingress-nginx, the PLAT-101 access-lab namespaces/RBAC,
-and the sample apps. Applied and destroyed as its own Terragrunt layer,
+external-secrets), ingress-nginx, the `devops-admins` → `cluster-admin`
+`ClusterRoleBinding` (`rbac.tf`), and the sample apps. Applied and destroyed
+as its own Terragrunt layer,
 after `eks-cluster` — see that module's README for why (destroy ordering:
 this layer's helm releases/manifests are torn down while the cluster and its
 controllers are still live, so an ALB/NLB a controller created actually gets
@@ -49,8 +50,6 @@ No modules.
 | [helm_release.ingress_nginx](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [kubernetes_cluster_role_binding_v1.devops_admins](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/cluster_role_binding_v1) | resource |
 | [kubernetes_manifest.app](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
-| [kubernetes_manifest.eks_access_lab_namespaces](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
-| [kubernetes_manifest.eks_access_lab_rolebindings](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
 | [kubernetes_manifest.external_secrets_cluster_store](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
 | [kubernetes_manifest.online_boutique](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |

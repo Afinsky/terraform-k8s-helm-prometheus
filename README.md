@@ -90,9 +90,10 @@ Pure AWS - no Kubernetes/Helm provider anywhere in this module:
 
 - **VPC** (`terraform-aws-modules/vpc/aws`) — single NAT gateway, flow logs optional.
 - **EKS** (`terraform-aws-modules/eks/aws`) — one SPOT-capacity managed node group,
-  access-entries-only auth (no `aws-auth` ConfigMap). Also creates the PLAT-101 access lab's
-  AWS-IAM-side access entries (namespaced RBAC principals) - the Kubernetes-side half
-  (namespaces/RoleBindings) lives in `eks-workloads` instead.
+  access-entries-only auth (no `aws-auth` ConfigMap). Also creates the SSO-role access entries
+  (`eks-access.tf`): `devops-admin` gets cluster-admin (plus a native RBAC `ClusterRoleBinding`
+  in `eks-workloads`), `developer` gets cluster-wide read-only, `platform-admin` gets cluster-admin
+  where it's assigned (management account only).
 - **ACM** + **Route53** — one wildcard cert, DNS validation (cross-account - see
   [`modules/identity-center`'s `dns.tf`](modules/identity-center/dns.tf)).
 - **ECR** — one repository.
@@ -113,11 +114,9 @@ via a Terragrunt `dependency` block, applied after it and **destroyed before it*
   access). New controllers should follow the same shape rather than reuse or widen an existing
   role.
 - **ingress-nginx** — fronted by the load balancer controller.
-- **PLAT-101 EKS access lab** (`eks-access-lab.tf`) — a `developers-edit` RoleBinding in the
-  `search-dev` namespace, pairing with the `developers`-group access entry `eks-cluster` creates
-  (alice, via the `developer` permission set), consuming SSO roles from `01-identity-center` by
-  name pattern (not remote state, not hardcoded ARNs). Also a `devops-admins` ClusterRoleBinding
-  to `cluster-admin` (`rbac.tf`), for the real day-to-day admin group.
+- **RBAC** (`rbac.tf`) — a `devops-admins` `ClusterRoleBinding` to `cluster-admin`, native-RBAC
+  admin for the real day-to-day admin group (paired with the AWS access-policy admin association
+  `eks-cluster` also grants that group — see below).
 - **Sample apps** — a small photo app (`app.tf`) and Online Boutique
   (`online-boutique.tf`, [GoogleCloudPlatform/microservices-demo](https://github.com/GoogleCloudPlatform/microservices-demo)),
   applied as `kubernetes_manifest` from raw upstream YAML in `k8s/manifests/` (namespace
@@ -221,8 +220,7 @@ Two AWS identities, used deliberately for different things:
   `<account-alias>-devops-admin` per account, see `~/.aws/config`). Used by every stack that
   *consumes* that identity instead of defining it (`eks-cluster` and `eks-workloads`).
 
-`alice` is the SSO user for the RBAC lab (member of `developers`, assigned the `developer`
-permission set), split across `eks-cluster/eks-access-lab.tf` (AWS-IAM access entry) and
-`eks-workloads/eks-access-lab.tf` (Kubernetes RoleBinding) — she gets real IAM access only to
-`eks:DescribeCluster`/`ListClusters`; her actual in-cluster permissions come entirely from
-Kubernetes RBAC RoleBindings, not IAM.
+`alice` is the SSO user for the PLAT-101 access exercise (member of `developers`, assigned the
+`developer` permission set, `eks-cluster/eks-access.tf`) — real IAM access is limited to
+`eks:DescribeCluster`/`ListClusters`, but her EKS access entry's `AmazonEKSViewPolicy`
+association gives her cluster-wide read-only in Kubernetes itself.

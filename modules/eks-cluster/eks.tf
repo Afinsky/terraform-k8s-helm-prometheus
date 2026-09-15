@@ -104,9 +104,8 @@ module "eks" {
         }
       }
     },
-    # PLAT-101 Phase 3: SSO roles from the eks-access-lab/01-identity-center stack.
-    # See eks-access-lab.tf.
-    local.lab_access_entries
+    # PLAT-101 Phase 3: SSO roles from modules/identity-center. See eks-access.tf.
+    local.sso_access_entries
   )
 
   tags = local.common_tags
