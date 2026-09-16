@@ -49,10 +49,10 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
             }]
           }
           # AdministratorAccess here mirrors what AWS's own
-          # OrganizationAccountAccessRole grants by default — this account is
-          # a personal lab. Narrow this (and drop ManagedPolicyArns for an
-          # inline/managed policy scoped to what `eks-cluster` actually needs)
-          # once this is more than a lab.
+          # OrganizationAccountAccessRole grants by default. Broader than
+          # what eks-cluster/eks-workloads actually need (VPC/EKS/ACM/ECR
+          # and IRSA role management) - narrowing this to a scoped
+          # inline/managed policy is still a TODO, not done yet.
           ManagedPolicyArns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
         }
       }
@@ -65,7 +65,7 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
 # SERVICE_MANAGED stack instances are declared against deployment_targets
 # (OUs), not individual accounts — that's what makes this apply to accounts
 # that don't exist yet. Targeting the org's own root, since there's no
-# sub-OU structure in this lab.
+# sub-OU structure — every account sits directly under the org root.
 resource "aws_cloudformation_stack_set_instance" "terraform_target" {
   stack_set_name = aws_cloudformation_stack_set.terraform_target.name
 

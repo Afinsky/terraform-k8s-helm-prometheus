@@ -11,7 +11,7 @@ variable "profile" {
 variable "region" {
   type        = string
   default     = "us-east-1"
-  description = "Region. IAM Identity Center lives in a single region — pick the same one the lab cluster will run in."
+  description = "Region. IAM Identity Center lives in a single region — pick the same one the EKS clusters (modules/eks-cluster) run in."
 }
 
 variable "aws_account_id" {

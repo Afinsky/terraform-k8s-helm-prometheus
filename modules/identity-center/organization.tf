@@ -12,7 +12,7 @@ resource "aws_organizations_organization" "this" {
   # organization.
   #
   # member.org.stacksets.cloudformation.amazonaws.com is what lets
-  # account-access-stackset.tf's StackSet use SERVICE_MANAGED permissions —
+  # account_access_stackset.tf's StackSet use SERVICE_MANAGED permissions —
   # ie. auto-deploy the terraform-target role into every account of this
   # Organization (including ones that don't exist yet) without us ever
   # having to log into them or hand-manage a per-account IAM role.

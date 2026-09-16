@@ -18,7 +18,7 @@ terraform {
 
 inputs = {
   profile     = "terraform"
-  environment = "lab"
+  environment = "dev"
   region      = "us-east-1"
   email       = "a.afinsky@gmail.com"
 }

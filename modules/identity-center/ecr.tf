@@ -1,9 +1,8 @@
-# Named independently of local.project_name (still "eks-access-lab", used
-# elsewhere for tags/descriptions) on purpose: an ECR repository name can't
-# be changed in place - renaming it means Terraform destroys the old one and
-# creates a new one under the new name. Scoping the "-lab-" cleanup to just
-# this resource keeps that blast radius to the repository itself, instead of
-# also touching every tag/description project_name feeds.
+# Named independently of local.project_name on purpose: an ECR repository
+# name can't be changed in place - renaming it means Terraform destroys the
+# old one and creates a new one under the new name. Kept as its own local so
+# a future project_name change (a tags/descriptions-only, in-place update)
+# never risks dropping this repository's images as a side effect.
 locals {
   ecr_repository_name = "eks-access"
 }

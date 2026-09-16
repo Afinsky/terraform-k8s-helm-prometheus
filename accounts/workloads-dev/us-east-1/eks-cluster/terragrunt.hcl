@@ -25,7 +25,7 @@ inputs = {
   region      = "us-east-1"
   repo_root   = get_repo_root()
 
-  # PLAT-101 Phase 3: EKS public API endpoint is restricted to this IP.
+  # EKS public API endpoint is restricted to this IP.
   # Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com
   my_ip_cidr = "83.175.181.227/32"
 

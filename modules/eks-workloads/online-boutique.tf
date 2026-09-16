@@ -4,7 +4,7 @@
 # a multi-container app to practice Prometheus/Grafana monitoring setup
 # against a real service-to-service topology, rather than the single-container
 # app.yaml. Same decode-and-apply pattern as app.tf: raw upstream YAML lives
-# in k8s/manifests/online-boutique.yaml (see that file's header comment for
+# in k8s/manifests/online-boutique.yaml (see the inline comments there for
 # what was changed from the upstream release), don't hand-write
 # kubernetes_manifest blocks for it.
 locals {

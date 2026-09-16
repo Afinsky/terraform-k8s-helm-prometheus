@@ -1,8 +1,8 @@
 # terraform-k8s-helm-prometheus
 
-A personal AWS/EKS homelab, provisioned with Terraform via Terragrunt. Used to practice
-production-shaped patterns — IAM Identity Center SSO, IRSA, Terragrunt layering,
-namespaced Kubernetes RBAC — on a single low-cost account, not to run anything real.
+A personal AWS/EKS homelab, provisioned with Terraform via Terragrunt: IAM Identity Center
+SSO, IRSA, and Terragrunt layering, applied for real against a live AWS Organization —
+not a course exercise or a throwaway sandbox.
 
 One AWS Organization rooted in `abotyan001`, member accounts (currently `workloads-dev`)
 each getting their own `eks-cluster` + `eks-workloads` layer pair, one region (`us-east-1`).
@@ -22,11 +22,11 @@ AWS Organization, region: us-east-1
 │  │
 │  ├─ eks-cluster          VPC, EKS control plane/node groups, ACM - pure AWS,
 │  │                        no Kubernetes/Helm provider. Applies as
-│  │                        "abotyan001-devops-admin".
+│  │                        "abotyan001-root.devops-admin".
 │  │
-│  └─ eks-workloads        IRSA controllers, ingress-nginx, namespaced RBAC lab,
+│  └─ eks-workloads        IRSA controllers, ingress-nginx, cluster-admin RBAC,
 │                           sample apps - depends on eks-cluster's outputs.
-│                           Applies as "abotyan001-devops-admin". Destroyed
+│                           Applies as "abotyan001-root.devops-admin". Destroyed
 │                           *before* eks-cluster (see "Destroy order" below).
 │
 └─ workloads-dev (member account, vended by 01-identity-center)
@@ -73,12 +73,16 @@ three groups, and the permission sets/account assignments that turn into SSO rol
 - **`platform-admin`** — `AdministratorAccess`, assigned to `platform-admins`, scoped to just the
   management account (`abotyan001-root`).
 - **`devops-admin`** — `AdministratorAccess` on every account in the Organization, assigned to
-  `devops-admins`. Becomes the `<account-alias>-devops-admin` SSO profile (e.g.
-  `abotyan001-devops-admin`, `workloads-dev-devops-admin`) that `eks-cluster`/`eks-workloads`
+  `devops-admins`. Becomes the `<account-name>.devops-admin` SSO profile (e.g.
+  `abotyan001-root.devops-admin`, `workloads-dev.devops-admin` — see `make aws-sso-configure-populate`,
+  which generates these in `~/.aws/config` via `aws-sso-util`) that `eks-cluster`/`eks-workloads`
   apply as.
 - **`developer`** — minimal IAM (just enough to find the cluster), assigned to `developers`, on
   `workloads-dev` and the management account. Real Kubernetes access comes later, from EKS access
   entries + RBAC defined in `eks-cluster`/`eks-workloads` — not from IAM.
+
+Also creates **ECR** (`ecr.tf`) — one repository, in the management account only (not
+per-account like `eks-cluster`/`eks-workloads`).
 
 Always applies as the static `terraform` IAM user, never `devops-admin`: this stack defines that
 role, so running it under its own not-yet-revocable STS token risks a self-lockout (see the
@@ -96,9 +100,8 @@ Pure AWS - no Kubernetes/Helm provider anywhere in this module:
   where it's assigned (management account only).
 - **ACM** + **Route53** — one wildcard cert, DNS validation (cross-account - see
   [`modules/identity-center`'s `dns.tf`](modules/identity-center/dns.tf)).
-- **ECR** — one repository.
 
-Applies as `<account-alias>-devops-admin` — a consumer of the identity `01-identity-center`
+Applies as `<account-name>.devops-admin` — a consumer of the identity `01-identity-center`
 defines, with no self-reference risk.
 
 ### `eks-workloads`
@@ -124,7 +127,7 @@ via a Terragrunt `dependency` block, applied after it and **destroyed before it*
   exist to practice a real multi-service topology, which is also where the "prometheus" in this
   repo's name comes from — no Prometheus/Grafana stack is actually deployed yet.
 
-Also applies as `<account-alias>-devops-admin`.
+Also applies as `<account-name>.devops-admin`.
 
 ### Destroy order
 
@@ -188,14 +191,16 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 | `tflint` | `terraform_unused_declarations` and a handful of other rules, in pre-commit |
 | `terraform-docs` | regenerates each module's `README.md` inputs/outputs tables (`identity-center`, `eks-cluster`, `eks-workloads`) |
 | `pre-commit` | runs all of the above + `conventional-pre-commit` on every commit |
-| `awscli` | SSO login, `aws eks update-kubeconfig` |
+| `awscli` | `aws sts`/`aws eks update-kubeconfig`, general AWS CLI use |
+| `aws-sso-util` | SSO login (`make login`) and generating `~/.aws/config` profiles (`make aws-sso-configure-populate`) |
 | `helm` / `kubectl` / `kustomize` | ad-hoc cluster debugging and rendering — also used against the parked `../argo-k8s-helm` repo |
 
 ## Getting started
 
 ```bash
 make setup                       # mise install
-make login                       # aws sso login --profile abotyan001-devops-admin
+make login                       # aws-sso-util login (opens a browser SSO login)
+make aws-sso-configure-populate      # generate ~/.aws/config profiles for every account/permission set
 
 make <layer> plan                # <layer> is 01-identity-center, eks-cluster, or eks-workloads
 make <layer> apply                   # apply eks-cluster before eks-workloads
@@ -217,10 +222,11 @@ Two AWS identities, used deliberately for different things:
   `01-identity-center`, because that stack *defines* the `devops-admin` role — running it under
   `devops-admin`'s own STS token would mean that role editing its own definition through itself.
 - **`devops-admin`** — the SSO permission set `01-identity-center` creates (profile named
-  `<account-alias>-devops-admin` per account, see `~/.aws/config`). Used by every stack that
+  `<account-name>.devops-admin` per account, generated into `~/.aws/config` by
+  `make aws-sso-configure-populate` — see `~/.aws/config`). Used by every stack that
   *consumes* that identity instead of defining it (`eks-cluster` and `eks-workloads`).
 
-`alice` is the SSO user for the PLAT-101 access exercise (member of `developers`, assigned the
+`alice` is the SSO user for the `developer` role (member of `developers`, assigned the
 `developer` permission set, `eks-cluster/eks-access.tf`) — real IAM access is limited to
 `eks:DescribeCluster`/`ListClusters`, but her EKS access entry's `AmazonEKSViewPolicy`
 association gives her cluster-wide read-only in Kubernetes itself.

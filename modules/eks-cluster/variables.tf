@@ -28,7 +28,7 @@ variable "region" {
 
 variable "my_ip_cidr" {
   type        = string
-  description = "Your public IP in x.x.x.x/32 format. Restricts the EKS public API endpoint (PLAT-101 lab, Phase 3). Get it with: curl -s https://checkip.amazonaws.com"
+  description = "Your public IP in x.x.x.x/32 format. Restricts the EKS public API endpoint's allowed CIDRs. Get it with: curl -s https://checkip.amazonaws.com"
 }
 
 variable "aws_account_id" {
