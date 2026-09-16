@@ -83,10 +83,13 @@ resource "helm_release" "external_dns" {
       value = var.cluster_name
     },
     {
-      # Flag name per `external-dns --help` as of app version v0.21.0 (pinned
-      # above) - re-check this against the upstream AWS tutorial if a future
-      # chart bump ever breaks Route53 auth, provider flags do get renamed.
-      name  = "extraArgs.aws-assume-role-arn"
+      # Flag name verified live via `external-dns --help` against app
+      # version v0.21.0 (pinned above) - it's "--aws-assume-role", not
+      # "--aws-assume-role-arn" (the upstream AWS tutorial's name, which
+      # this CLI doesn't actually accept and fails to start with
+      # "unknown long flag '--aws-assume-role-arn'"). Re-verify the same
+      # way if a future chart bump ever breaks Route53 auth.
+      name  = "extraArgs.aws-assume-role"
       value = var.dns_zone_writer_role_arn
       type  = "string"
     }

@@ -39,6 +39,9 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # make setup                    - install terraform/terragrunt/etc via mise
 # make login                    - log into AWS via aws-sso-util
 # make <layer> <command>        - run a Terragrunt command against one layer
+# make eks-workloads bootstrap-crds - first apply of eks-workloads on a fresh account only:
+#                                  installs external-secrets' CRDs before a normal plan/apply
+#                                  can succeed (see the target's own comment below for why)
 # make run-all-plan             - plan every layer
 # make run-all-apply            - apply every layer (eks-cluster before eks-workloads)
 # make run-all-destroy          - destroy every layer (eks-workloads before eks-cluster)
@@ -51,6 +54,7 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # eg make 01-identity-center apply
 # eg make ACCOUNT=workloads-dev eks-cluster apply
 # eg make ACCOUNT=workloads-dev destroy-safe
+# eg make ACCOUNT=workloads-dev eks-workloads bootstrap-crds
 # ----------------------------------------------------------------
 
 setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml
@@ -129,6 +133,22 @@ debug-apply: ## make <layer> debug-apply
 		--non-interactive \
 		--backend-bootstrap \
 		--log-level debug
+
+# kubernetes_manifest (hashicorp/kubernetes provider) queries the live API
+# server for a resource's GroupVersionKind at PLAN time, not apply time -
+# depends_on can't help here. On a brand-new cluster, external-secrets.tf's
+# ClusterSecretStore and app.tf's ExternalSecret (both external-secrets CRDs)
+# fail every plan/apply with "no matches for kind ... (CRD may not be
+# installed)" until the chart that owns those CRDs is actually installed.
+# Run this once, targeting only the helm_release that installs the CRDs,
+# before the first `plan`/`apply` of eks-workloads on a fresh account -
+# after that, CRDs exist and normal plan/apply works unmodified.
+bootstrap-crds: ## make eks-workloads bootstrap-crds ACCOUNT=<alias> - first-apply only, installs external-secrets' CRDs
+	terragrunt apply \
+		--working-dir ./$(LAYER) \
+		--non-interactive \
+		--backend-bootstrap \
+		-target=helm_release.external_secrets
 
 run-all-plan: ## plan every layer under $(ACCOUNT_DIR)
 	terragrunt run --all plan \
