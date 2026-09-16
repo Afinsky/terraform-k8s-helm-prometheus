@@ -10,9 +10,10 @@
 #   the AWS SDK and creates it (versioned, AES256-encrypted, public access blocked) if missing, idempotently,
 #   outside of any terraform state.
 #
-# NOTE: there's no `generate "provider"` block here. `eks-cluster`'s kubernetes/helm providers are wired off
-# live `module.eks` outputs, which Terragrunt can't template statically, so both `provider.tf` files stay
-# hand-written and committed as-is.
+# NOTE: there's no `generate "provider"` block here. `eks-workloads`'s kubernetes/helm providers are wired
+# off `eks-cluster`'s outputs (passed across the Terragrunt `dependency` boundary as plain string inputs,
+# not a `module.eks` reference), which Terragrunt can't template statically, so `provider.tf` stays
+# hand-written and committed as-is in each module (identity-center/eks-cluster/eks-workloads).
 #---------------------------------------------------------------------------------------------------------------------
 
 terraform_version_constraint  = ">= 1.3.2"

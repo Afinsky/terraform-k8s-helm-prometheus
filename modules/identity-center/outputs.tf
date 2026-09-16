@@ -5,7 +5,7 @@ output "sso_instance_arn" {
 
 output "identity_store_id" {
   value       = local.identity_store_id
-  description = "Identity store ID, used by the 02-cluster stack."
+  description = "Identity store ID for this Identity Center instance. Not currently consumed by any other layer."
 }
 
 output "user_emails" {

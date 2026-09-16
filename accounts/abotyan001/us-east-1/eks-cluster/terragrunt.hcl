@@ -1,8 +1,8 @@
 #-------------------------------------------------------------
 # terragrunt.hcl
 #
-# - wire up the modules/eks-cluster module and configure its inputs (was develop.tfvars —
-#   the tflint fixture in modules/eks-cluster/ still keeps that filename)
+# - wire up the modules/eks-cluster module and configure its inputs (was develop.tfvars,
+#   before the module's rename to eks-cluster; the tflint fixture is eks-cluster.tfvars now)
 # - backend key comes from state.hcl (see root.hcl)
 #-------------------------------------------------------------
 
@@ -18,12 +18,12 @@ terraform {
 }
 
 inputs = {
-  profile     = "abotyan001-root.devops-admin" #"abotyan001-devops-admin" #"terraform"
+  profile     = "abotyan001-root.devops-admin"
   environment = "dev"
   region      = "us-east-1"
   repo_root   = get_repo_root()
 
-  # PLAT-101 Phase 3: EKS public API endpoint is restricted to this IP.
+  # EKS public API endpoint is restricted to this IP.
   # Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com
   my_ip_cidr = "83.175.181.227/32"
 

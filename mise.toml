@@ -43,13 +43,14 @@ kubectl   = "1.34"
 kustomize = "5.7"
 
 # --- Shared -------------------------------------------------------------------
-# AWS auth for every terraform command (provider.tf reads ~/.aws/*, profile
-# `terraform`) and for `aws eks update-kubeconfig`.
+# AWS auth for every terraform command (every provider.tf reads ~/.aws/*, profile
+# set per-layer - "terraform" for 01-identity-center, "<account-name>.devops-admin"
+# for eks-cluster/eks-workloads) and for `aws eks update-kubeconfig`.
 awscli     = "2"
-# `aws-sso-util configure populate` — generates ~/.aws/config SSO profile
-# blocks for every permission set/account pair from modules/identity-center's
-# live state, instead of hand-writing each `<account-alias>-<role-name>`
-# profile (see ~/.aws/config's naming convention in CLAUDE.md).
+# `make aws-sso-configure-populate` (aws-sso-util configure populate) —
+# generates ~/.aws/config SSO profile blocks for every permission set/account
+# pair from modules/identity-center's live state, instead of hand-writing each
+# `<account-name>.<role-name>` profile (see CLAUDE.md).
 "pipx:aws-sso-util" = "latest"
 # Hook runner for .pre-commit-config.yaml (`make pre-commit`).
 pre-commit = "4"

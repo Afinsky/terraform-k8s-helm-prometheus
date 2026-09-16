@@ -8,7 +8,7 @@
 # Two distinct callers assume this role, both by ARN pattern (not per-account,
 # so a new target account needs no change here):
 #   - external-dns's IRSA role in each target cluster (`*-external-dns`,
-#     see modules/eks-cluster/external-dns.tf) - the live controller, syncing
+#     see modules/eks-workloads/external-dns.tf) - the live controller, syncing
 #     Ingress hosts into Route53 on an ongoing basis.
 #   - the SSO `devops-admin` role - modules/eks-cluster's ACM setup creates the
 #     one-time DNS validation CNAME record for each cluster's certificate as
@@ -48,10 +48,11 @@ resource "aws_iam_role" "dns_zone_writer" {
   tags = local.common_tags
 }
 
-# Same shape as modules/eks-cluster/external-dns.tf's own policy (that role's
-# permissions collapse to just this assume, once it stops touching Route53
-# directly - see that file): mutating actions scoped to the one zone,
-# ListHostedZones on "*" since Route53 has no resource-level permissions for it.
+# Same shape as modules/eks-workloads/external-dns.tf's own policy (that
+# role's permissions are just this assume - it hops through here rather than
+# touching Route53 directly - see that file): mutating actions scoped to the
+# one zone, ListHostedZones on "*" since Route53 has no resource-level
+# permissions for it.
 resource "aws_iam_role_policy" "dns_zone_writer" {
   name = "dns-zone-writer"
   role = aws_iam_role.dns_zone_writer.id

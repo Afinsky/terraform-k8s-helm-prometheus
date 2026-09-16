@@ -4,12 +4,13 @@ module "eks" {
 
   name                                   = "${local.resource_name}-k8s-cluster"
   kubernetes_version                     = "1.36"
-  enabled_log_types                      = ["api", "audit", "authenticator"] # audit -> who did what (PLAT-101 Phase 6); authenticator -> who tried to log in
+  enabled_log_types                      = ["api", "audit", "authenticator"] # audit -> who did what; authenticator -> who tried to log in
   cloudwatch_log_group_retention_in_days = 30
   endpoint_public_access                 = true
   endpoint_public_access_cidrs           = [var.my_ip_cidr]
 
-  # Access entries only, no aws-auth ConfigMap (PLAT-101 Phase 3).
+  # Access entries only, no aws-auth ConfigMap — the modern, EKS-native way
+  # to grant IAM principals Kubernetes access (see eks-access.tf).
   authentication_mode = "API"
 
   addons = {
@@ -54,7 +55,7 @@ module "eks" {
     }
   }
 
-  # false on purpose (PLAT-101 Q7): true grants the identity Terraform runs
+  # false on purpose: true grants the identity Terraform runs
   # as an invisible admin access entry that never shows up in
   # `aws eks list-access-entries`. Made it explicit below ("terraform" entry)
   # instead - every helm_release/kubernetes_manifest resource in this
@@ -104,7 +105,7 @@ module "eks" {
         }
       }
     },
-    # PLAT-101 Phase 3: SSO roles from modules/identity-center. See eks-access.tf.
+    # SSO roles from modules/identity-center. See eks-access.tf.
     local.sso_access_entries
   )
 

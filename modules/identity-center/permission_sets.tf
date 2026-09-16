@@ -58,9 +58,9 @@ locals {
       description      = "Read-only + EKS discovery, on workloads-dev and the management account."
       group            = "developers"
       session_duration = "PT1H"
-      # abotyan001-root: needed so modules/eks-cluster's eks-access.tf (which
-      # today runs against this account, not workloads-dev) has a third
-      # distinct role to grant cluster-wide read access to.
+      # abotyan001-root: modules/eks-cluster's eks-access.tf is applied into
+      # both this account and workloads-dev (see account_patterns below), and
+      # needs the developer role's access entry in each.
       account_patterns = ["^workloads-dev$", "^abotyan001-root$"]
       managed_policies = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
       inline_policy = jsonencode({

@@ -7,11 +7,11 @@
 # a bad change here (wrong principal_id, a dropped policy attachment) can
 # still apply successfully under an already-issued STS token (AWS doesn't
 # revoke those retroactively), then lock out the *next* `aws sso login
-# --profile <account-alias>-devops-admin` - and you'd have to fall back to
+# --profile <account-name>.devops-admin` - and you'd have to fall back to
 # "terraform" to fix it anyway. So skip the round-trip and just always use
 # it here.
 #
-# "<account-alias>-devops-admin" is for stacks that CONSUME this identity
+# "<account-name>.devops-admin" is for stacks that CONSUME this identity
 # instead of defining it - e.g. modules/eks-cluster, or any future
 # per-account workload stack. Those don't touch devops-admin's own
 # definition, so there's no self-reference risk.

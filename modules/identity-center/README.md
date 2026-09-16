@@ -1,6 +1,6 @@
 # 01-identity
 
-Terraform module for Phase 1 + Phase 2 of the PLAT-101 lab, applied via
+Terraform module for the Organization + IAM Identity Center layer, applied via
 [`accounts/abotyan001/us-east-1/01-identity-center`](../../accounts/abotyan001/us-east-1/01-identity-center)'s
 `terragrunt.hcl`. Creates the AWS Organization, groups, users, group
 memberships, and all permission sets/assignments. Structure and backend
@@ -39,11 +39,11 @@ Then by hand in the console (region `us-east-1`):
 #    Without this, aws_cloudformation_stack_set.terraform_target fails with:
 #    "ValidationError: You must enable organizations access to operate a
 #    service managed stack set". Run once, from the management account:
-aws cloudformation describe-organizations-access --profile abotyan001-devops-admin --region us-east-1
-aws cloudformation activate-organizations-access --profile abotyan001-devops-admin --region us-east-1
+aws cloudformation describe-organizations-access --profile abotyan001-root.devops-admin --region us-east-1
+aws cloudformation activate-organizations-access --profile abotyan001-root.devops-admin --region us-east-1
 
-# 4. Everything else: groups, users, memberships, PlatformAdmin, EKSDev-*,
-#    and the terraform-target StackSet.
+# 4. Everything else: groups, users, memberships, the platform-admin/
+#    devops-admin/developer permission sets, and the terraform-target StackSet.
 terragrunt apply
 ```
 
@@ -62,6 +62,8 @@ those first.
 
 ## Variables
 
-See `variables.tf`. `profile` is the same IAM profile used by `../eks-cluster`'s
-`terragrunt.hcl` (e.g. `terraform`): at the time of the first apply, the
-`abotyan001-devops-admin` SSO profile doesn't exist yet.
+See `variables.tf`. `profile` is always `terraform` here, unlike `../eks-cluster`'s
+`terragrunt.hcl` (which uses the `abotyan001-root.devops-admin` SSO profile that this
+stack itself defines): at the time of the first apply, that SSO profile doesn't
+exist yet - and this stack must never apply under the identity it's defining
+(see `provider.tf`).

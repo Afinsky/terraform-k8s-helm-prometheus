@@ -2,14 +2,14 @@ locals {
   common_tags = merge(
     {
       "client"      = "K8S practice"
-      "project"     = "eks-access-lab"
+      "project"     = "eks-access"
       "environment" = var.environment
       "owner"       = "me"
       "Terraform"   = "true"
     }
   )
 
-  project_name  = "eks-access-lab"
+  project_name  = "eks-access"
   resource_name = "${var.environment}-${local.project_name}"
 
   email_parts = split("@", var.email)

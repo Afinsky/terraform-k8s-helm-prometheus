@@ -57,7 +57,7 @@ release that owned it, orphaning it and blocking subnet deletion.
 | <a name="input_dns_zone_writer_role_arn"></a> [dns\_zone\_writer\_role\_arn](#input\_dns\_zone\_writer\_role\_arn) | ARN of modules/identity-center's dns-zone-writer role, in the management account. Assumed by the aws.dns provider (see provider.tf) for this module's own ACM validation records - the Route53 zone lives in that account regardless of which account this module is applied into. | `string` | n/a | yes |
 | <a name="input_enable_flow_log"></a> [enable\_flow\_log](#input\_enable\_flow\_log) | Whether or not to enable VPC Flow Logs | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment | `string` | n/a | yes |
-| <a name="input_my_ip_cidr"></a> [my\_ip\_cidr](#input\_my\_ip\_cidr) | Your public IP in x.x.x.x/32 format. Restricts the EKS public API endpoint (PLAT-101 lab, Phase 3). Get it with: curl -s https://checkip.amazonaws.com | `string` | n/a | yes |
+| <a name="input_my_ip_cidr"></a> [my\_ip\_cidr](#input\_my\_ip\_cidr) | Your public IP in x.x.x.x/32 format. Restricts the EKS public API endpoint's allowed CIDRs. Get it with: curl -s https://checkip.amazonaws.com | `string` | n/a | yes |
 | <a name="input_profile"></a> [profile](#input\_profile) | AWS Profile name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | value of the region where the resources will be created | `string` | `"us-east-1"` | no |
 | <a name="input_vpc"></a> [vpc](#input\_vpc) | VPC configuration keyed by network name | `any` | `null` | no |

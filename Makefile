@@ -10,11 +10,6 @@ SHELL := $(shell which bash) # set default shell
 ACCOUNT ?= abotyan001
 ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
-# aws sso login profile for the default ACCOUNT (abotyan001). "01-identity-center" doesn't
-# use it — see modules/identity-center/provider.tf for why "terraform" (a static IAM user)
-# is used there instead. Naming convention: <account-alias>.<role-name> (~/.aws/config).
-IAM_ROLE := abotyan001-devops-admin
-
 LOCK_ID :=
 
 PORTAL_URL := https://abatsian.awsapps.com/start
@@ -42,7 +37,7 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # usage:
 #
 # make setup                    - install terraform/terragrunt/etc via mise
-# make login                    - log into AWS via AWS SSO (IAM_ROLE profile, default abotyan001-devops-admin)
+# make login                    - log into AWS via aws-sso-util
 # make <layer> <command>        - run a Terragrunt command against one layer
 # make run-all-plan             - plan every layer
 # make run-all-apply            - apply every layer (eks-cluster before eks-workloads)
