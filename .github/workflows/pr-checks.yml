@@ -1,0 +1,37 @@
+name: PR Checks
+
+# Runs the same checks `make lint` runs locally (fmt, terraform validate,
+# tflint, terraform-docs, gitleaks, trivy, conventional-commit format) on
+# every PR - see docs/setup_evaluation.md, item #1 ("no plan on PR" gap).
+#
+# Deliberately does NOT run `terragrunt plan` here: that needs real AWS
+# credentials, which means granting this repo's GitHub Actions a new OIDC
+# trust into the AWS Organization - a separate, explicit decision, not
+# bundled into this workflow. `terraform_validate`/`terraform_tflint` below
+# need no AWS access at all (pre-commit-terraform inits both with
+# -backend=false - confirmed by running this exact hook set locally against
+# a clean checkout with no .terraform/.terragrunt-cache and no AWS
+# credentials in the environment).
+on:
+  pull_request:
+
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    name: pre-commit (fmt, validate, tflint, docs, gitleaks, trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mise Action
+        uses: jdx/mise-action@v2
+
+      - name: Run make setup
+        run: make setup
+
+      - name: Run make lint
+        run: make lint

@@ -1,0 +1,22 @@
+# Accepted-risk findings for this personal homelab — see docs/setup_evaluation.md
+# for the full reasoning. Each entry needs a comment explaining WHY it's accepted,
+# not just its ID, so a future re-read of this file can judge if the trade-off
+# still holds.
+
+# EKS public API endpoint is enabled (modules/eks-cluster/eks.tf) - there's no
+# VPN/bastion/Direct Connect into the VPC, so a private-only endpoint would lock
+# out both kubectl AND terragrunt apply itself (Terraform also talks to the API
+# server from the same laptop). Compensating control: endpoint_public_access_cidrs
+# restricts it to a single home IP (var.my_ip_cidr), not 0.0.0.0/0. Revisit if a
+# bastion/SSM-tunnel setup is ever added.
+AVD-AWS-0040
+
+# EKS node security group allows unrestricted egress (terraform-aws-modules/eks
+# default). Node images are pulled from Docker Hub (ravindrasingh6969/nodeapp,
+# online-boutique), which fronts registry-1.docker.io behind a large, unpublished,
+# rotating CDN IP range - there's no stable IP set to allowlist without either
+# breaking pulls on the next rotation or allowing a range about as wide as
+# 0.0.0.0/0 anyway. Narrowing this for real means migrating those images into our
+# own ECR + adding VPC endpoints (ecr.api/ecr.dkr/s3) so ECR pulls skip the
+# internet entirely - not done yet. Revisit if/when that migration happens.
+AVD-AWS-0104

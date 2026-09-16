@@ -12,6 +12,10 @@ spec:
       labels:
         app: photoapp
     spec:
+      # Pod-level counterpart to the container securityContext below - same
+      # KSV-0118 finding is raised separately for pod vs. container scope.
+      securityContext:
+        runAsNonRoot: true
       containers:
       - image: ravindrasingh6969/nodeapp:latest
         name: photoapp
@@ -22,6 +26,28 @@ spec:
             # Populated by external-secrets.tf's ExternalSecret below, not
             # hand-created - see kind: ExternalSecret further down this file.
             name: photoapp-db-credentials
+        # Closes trivy findings KSV-0014/KSV-0118 (default security context).
+        # readOnlyRootFilesystem forces this image's own writes (if any -
+        # npm/node tmp files, upload buffers) onto the /tmp emptyDir below
+        # instead of the container's root FS - if this image turns out to
+        # write somewhere else, that path needs its own emptyDir mount too
+        # (check for CrashLoopBackOff/permission-denied in logs after apply).
+        # runAsNonRoot assumes the image doesn't hard-require root - if the
+        # pod fails to start with a permission error, that assumption was
+        # wrong and this line needs a matching runAsUser instead of just
+        # runAsNonRoot: true.
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
