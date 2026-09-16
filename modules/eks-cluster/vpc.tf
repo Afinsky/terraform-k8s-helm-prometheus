@@ -15,7 +15,7 @@ module "vpc" {
   # enable_dns_hostnames = true) - false here caused nodes to fall back to
   # public/unreachable DNS answers and time out joining the cluster.
   enable_dns_hostnames    = true
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
   #Note that the order of the list of availability zones is associated with the order of the list of subnets
   cidr             = local.vpc.homelab.cidr
   azs              = local.vpc.homelab.azs

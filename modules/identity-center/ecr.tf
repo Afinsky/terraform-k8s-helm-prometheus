@@ -10,7 +10,10 @@ locals {
 resource "aws_ecr_repository" "this" {
   for_each             = toset([local.ecr_repository_name])
   name                 = each.key
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
   tags = {
     Name = "${local.ecr_repository_name}-${var.environment}-ecr"
   }

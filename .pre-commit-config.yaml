@@ -69,19 +69,19 @@ repos:
   # commit permanently red. Run without --severity locally to see everything.
 
 # Temporarily disabled #TODO: ...
-#  - repo: local
-#    hooks:
-#      - id: trivyfs
-#        name: trivyfs
-#        language: system
-#        pass_filenames: false
-#        entry: >-
-#          trivy fs --cache-dir .pre-commit-trivy-cache --exit-code 1
-#          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
-#      - id: trivyconfig
-#        name: trivyconfig
-#        language: system
-#        pass_filenames: false
-#        entry: >-
-#          trivy config --cache-dir .pre-commit-trivy-cache --exit-code 1
-#          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
+  - repo: local
+    hooks:
+      - id: trivyfs
+        name: trivyfs
+        language: system
+        pass_filenames: false
+        entry: >-
+          trivy fs --cache-dir .pre-commit-trivy-cache --exit-code 1
+          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
+      - id: trivyconfig
+        name: trivyconfig
+        language: system
+        pass_filenames: false
+        entry: >-
+          trivy config --cache-dir .pre-commit-trivy-cache --exit-code 1
+          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
