@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.7](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.6...v1.2.7) (2026-09-16)
+
+
+### Bug Fixes
+
+* **eks-workloads:** centralize app secrets in management account via cross-account assume-role ([f277f22](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/f277f220b13612fe29c93c2cdba38d17f1aa9d2d))
+
 ## [1.2.6](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.5...v1.2.6) (2026-09-16)
 
 
