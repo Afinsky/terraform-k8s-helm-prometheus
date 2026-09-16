@@ -42,6 +42,20 @@ locals {
 locals {
   prefix = "${local.project_name}-${var.environment}-${var.region}"
 
+  # Referenced both by module.eks's own `name` and by the node groups' CA
+  # discovery tags below - can't use module.eks.cluster_name for the latter,
+  # that would be a self-reference (the tags are an input to module.eks).
+  cluster_name = "${local.resource_name}-k8s-cluster"
+
+  # Cluster Autoscaler (modules/eks-workloads/cluster-autoscaler.tf)
+  # discovers which ASGs it's allowed to scale by these tags - standard
+  # upstream convention, also what its IAM policy's ResourceTag condition
+  # matches against.
+  cluster_autoscaler_tags = {
+    "k8s.io/cluster-autoscaler/enabled"               = "true"
+    "k8s.io/cluster-autoscaler/${local.cluster_name}" = "owned"
+  }
+
   # Root-account break-glass admin entry: grants cluster-admin to this
   # account's root ARN directly, independent of Identity Center/SSO - a
   # fallback that still works if the SSO-based devops-admin access entry

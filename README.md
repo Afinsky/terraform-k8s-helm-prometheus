@@ -176,7 +176,6 @@ policies/
 Makefile                          # make <layer> <command>, see below
 mise.toml                         # pinned CLI tool versions (this repo + ../argo-k8s-helm)
 .pre-commit-config.yaml           # fmt/validate/tflint/docs/conventional-commits, on every commit
-.github/workflows/pr-checks.yml   # same pre-commit checks, run on every PR (no AWS creds needed - see the file's own comment)
 .releaserc.yaml                   # semantic-release config (CHANGELOG.md, version tags)
 CLAUDE.md                         # guidance for AI coding agents working in this repo
 ```
