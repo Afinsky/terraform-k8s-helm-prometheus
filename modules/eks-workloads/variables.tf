@@ -29,6 +29,11 @@ variable "dns_zone_writer_role_arn" {
   description = "ARN of modules/identity-center's dns-zone-writer role, in the management account. external-dns's IRSA role assumes this at runtime to write into the Route53 zone, which lives in that account regardless of which account this module is applied into."
 }
 
+variable "secrets_reader_role_arn" {
+  type        = string
+  description = "ARN of modules/identity-center's secrets-reader role, in the management account. external-secrets' IRSA role assumes this at runtime to read app secrets out of Secrets Manager, which lives in that account regardless of which account this module is applied into."
+}
+
 variable "dns_zone_name" {
   type        = string
   description = "Domain name of the zone above (external-dns's domainFilters)."
