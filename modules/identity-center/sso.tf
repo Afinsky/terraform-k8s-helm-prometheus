@@ -5,6 +5,14 @@ locals {
 
 # ============================================================
 # Groups and users (in a real company these would arrive from Okta via SCIM)
+#
+# A group by itself carries no AWS permissions at all - it's just a named
+# list of members here, same as in any directory service. Permissions only
+# exist once a group is used as the `principal_id` of an
+# aws_ssoadmin_account_assignment (permission_sets.tf) - that's the one place
+# a group, a permission set, and a target account get bound together, and
+# it's what makes AWS auto-provision the actual IAM role
+# (AWSReservedSSO_<permission-set-name>_<suffix>) inside that account.
 # ============================================================
 resource "aws_identitystore_group" "groups" {
   for_each          = local.groups

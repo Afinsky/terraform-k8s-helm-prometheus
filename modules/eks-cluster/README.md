@@ -51,7 +51,7 @@ release that owned it, orphaning it and blocking subnet deletion.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_aws_account_id"></a> [aws\_account\_id](#input\_aws\_account\_id) | Expected AWS account ID (from accounts/abotyan001/account.hcl, passed by Terragrunt). Guards provider.tf's allowed\_account\_ids against an apply landing in the wrong AWS account/profile. | `string` | n/a | yes |
+| <a name="input_aws_account_id"></a> [aws\_account\_id](#input\_aws\_account\_id) | Expected AWS account ID (from account.hcl, passed by Terragrunt). Guards provider.tf's allowed\_account\_ids against an apply landing in the wrong AWS account/profile. | `string` | n/a | yes |
 | <a name="input_dns_zone_id"></a> [dns\_zone\_id](#input\_dns\_zone\_id) | Route53 hosted zone ID, from 01-identity-center's dns\_zone\_id output. The zone itself lives in the management account, not this one. | `string` | n/a | yes |
 | <a name="input_dns_zone_name"></a> [dns\_zone\_name](#input\_dns\_zone\_name) | Domain name of the zone above, from 01-identity-center's dns\_zone\_name output. | `string` | n/a | yes |
 | <a name="input_dns_zone_writer_role_arn"></a> [dns\_zone\_writer\_role\_arn](#input\_dns\_zone\_writer\_role\_arn) | ARN of modules/identity-center's dns-zone-writer role, in the management account. Assumed by the aws.dns provider (see provider.tf) for this module's own ACM validation records - the Route53 zone lives in that account regardless of which account this module is applied into. | `string` | n/a | yes |

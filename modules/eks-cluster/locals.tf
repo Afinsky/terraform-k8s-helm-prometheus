@@ -42,6 +42,14 @@ locals {
 locals {
   prefix = "${local.project_name}-${var.environment}-${var.region}"
 
+  # Root-account break-glass admin entry: grants cluster-admin to this
+  # account's root ARN directly, independent of Identity Center/SSO - a
+  # fallback that still works if the SSO-based devops-admin access entry
+  # (eks.tf) or permission_sets.tf ever gets misconfigured or SSO itself is
+  # down. "viewer" is a currently-unused persona (empty user_arn list, so it
+  # produces no entries) - the SSO "developer" permission set's own access
+  # entry (eks-access.tf) already covers cluster-wide read-only, but the
+  # shape is kept here in case a non-SSO read-only principal is ever needed.
   eks_access_entries = flatten(
     [
       for k, v in {
