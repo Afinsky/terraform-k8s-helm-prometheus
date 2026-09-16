@@ -25,4 +25,13 @@ locals {
   dns_zone_writer_role_arn = "arn:aws:iam::417886991962:role/dns-zone-writer"
   dns_zone_id              = "Z03682881TYQWE74HYLWJ"
   dns_zone_name            = "abotyan.click"
+
+  # modules/eks-workloads' external-secrets assumes this (from any account)
+  # to read app secrets out of Secrets Manager in the management account -
+  # same cross-account-writer-role pattern as dns_zone_writer_role_arn
+  # above, and same caveat: source of truth is
+  # accounts/abotyan001/us-east-1/01-identity-center's
+  # secrets_reader_role_arn output, update this by hand if that stack is
+  # ever re-applied with a different role name.
+  secrets_reader_role_arn = "arn:aws:iam::417886991962:role/secrets-reader"
 }

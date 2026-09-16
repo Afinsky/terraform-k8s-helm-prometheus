@@ -36,13 +36,12 @@ No modules.
 
 | Name | Type |
 | ---- | ---- |
-| [aws_iam_policy.external_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.lb_controller](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.external_dns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.external_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.lb_controller](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.external_dns_assume_dns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
-| [aws_iam_role_policy_attachment.external_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy.external_secrets_assume_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy_attachment.lb_controller](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [helm_release.aws_load_balancer_controller](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.external_dns](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
@@ -52,7 +51,6 @@ No modules.
 | [kubernetes_manifest.app](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
 | [kubernetes_manifest.external_secrets_cluster_store](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
 | [kubernetes_manifest.online_boutique](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/manifest) | resource |
-| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_eks_cluster_auth.eks](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster_auth) | data source |
 
 ## Inputs
@@ -72,6 +70,7 @@ No modules.
 | <a name="input_profile"></a> [profile](#input\_profile) | AWS Profile name | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | value of the region where the resources will be created | `string` | `"us-east-1"` | no |
 | <a name="input_repo_root"></a> [repo\_root](#input\_repo\_root) | Absolute path to the repo root, set via Terragrunt's get\_repo\_root(). Terragrunt always runs Terraform from a copy staged under .terragrunt-cache, so path.module-relative traversal up to files outside this stack (k8s/manifests/, policies/) can't be used — the depth of that staging copy isn't stable. | `string` | n/a | yes |
+| <a name="input_secrets_reader_role_arn"></a> [secrets\_reader\_role\_arn](#input\_secrets\_reader\_role\_arn) | ARN of modules/identity-center's secrets-reader role, in the management account. external-secrets' IRSA role assumes this at runtime to read app secrets out of Secrets Manager, which lives in that account regardless of which account this module is applied into. | `string` | n/a | yes |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID, from modules/eks-cluster's vpc\_id output. aws-load-balancer-controller needs it to find subnets/security groups. | `string` | n/a | yes |
 
 ## Outputs

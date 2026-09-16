@@ -3,16 +3,15 @@
 # Syncs secrets from AWS Secrets Manager into native Kubernetes Secret
 # objects via ExternalSecret resources that apps reference like any other
 # Secret. Same IRSA pattern as external-dns.tf / load-balancer-controller.tf:
-# a dedicated role trusting only this controller's ServiceAccount, policy
-# scoped to a naming prefix rather than every secret in the account.
+# a dedicated role trusting only this controller's ServiceAccount.
 #
-# Least privilege is enforced by naming convention: only secrets named
-# "${local.prefix}/*" (e.g. "me-dev-us-east-1/my-app/db-password") are
-# readable. Name new secrets under that prefix, or widen
-# aws_iam_policy.external_secrets below if a different scheme is needed.
-# ListSecrets is intentionally omitted - ExternalSecrets in this repo
-# reference keys directly (dataFrom.find, which needs account-wide
-# ListSecrets, is not supported by this policy).
+# App secrets live centrally in Secrets Manager in the management account,
+# not per-account (same reasoning as the Route53 zone in dns.tf) - so, same
+# as external-dns.tf, this role's own permissions are just an assume-role:
+# it hops through modules/identity-center's secrets-reader role
+# (modules/identity-center/secrets.tf), which holds the actual
+# GetSecretValue/DescribeSecret permissions, scoped by naming prefix, over
+# there. See aws_iam_role_policy.external_secrets_assume_secrets.
 
 resource "aws_iam_role" "external_secrets" {
   name               = "${local.prefix}-external-secrets"
@@ -44,28 +43,17 @@ EOF
   }
 }
 
-resource "aws_iam_policy" "external_secrets" {
-  name = "${local.prefix}-external-secrets"
+resource "aws_iam_role_policy" "external_secrets_assume_secrets" {
+  name = "${local.prefix}-external-secrets-assume-secrets"
+  role = aws_iam_role.external_secrets.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue",
-          "secretsmanager:DescribeSecret",
-        ]
-        Resource = [
-          "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${local.prefix}/*"
-        ]
-      },
-    ]
+    Statement = [{
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = [var.secrets_reader_role_arn]
+    }]
   })
-}
-
-resource "aws_iam_role_policy_attachment" "external_secrets" {
-  role       = aws_iam_role.external_secrets.name
-  policy_arn = aws_iam_policy.external_secrets.arn
 }
 
 resource "helm_release" "external_secrets" {
@@ -95,7 +83,7 @@ resource "helm_release" "external_secrets" {
   # cluster-wide mutating webhook on Service objects, and this chart creates
   # its own webhook Service - without this dependency the create can race
   # ahead and hit "no endpoints available" on that webhook.
-  depends_on = [aws_iam_role_policy_attachment.external_secrets, helm_release.aws_load_balancer_controller]
+  depends_on = [aws_iam_role_policy.external_secrets_assume_secrets, helm_release.aws_load_balancer_controller]
 }
 
 # ClusterSecretStore, applied the same way app.tf applies app.yaml: decode
@@ -105,7 +93,8 @@ resource "helm_release" "external_secrets" {
 locals {
   external_secrets_manifest = provider::kubernetes::manifest_decode_multi(
     templatefile("${var.repo_root}/k8s/manifests/external-secrets.yaml", {
-      region = var.region
+      region   = var.region
+      role_arn = var.secrets_reader_role_arn
     })
   )
 }

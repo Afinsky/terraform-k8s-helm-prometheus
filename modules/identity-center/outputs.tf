@@ -37,3 +37,8 @@ output "dns_zone_name" {
   value       = local.zone_name
   description = "Domain this Organization's Route53 zone manages."
 }
+
+output "secrets_reader_role_arn" {
+  value       = aws_iam_role.secrets_reader.arn
+  description = "modules/eks-workloads' external-secrets assumes this (from any account) to read app secrets out of Secrets Manager here."
+}
