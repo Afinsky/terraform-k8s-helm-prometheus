@@ -32,6 +32,20 @@ dependency "eks_cluster" {
   mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
 }
 
+# See ../eks-cluster/terragrunt.hcl's identity_center dependency comment for
+# why this replaced global.hcl's hardcoded dns_zone_writer_role_arn/
+# secrets_reader_role_arn/dns_zone_name literals.
+dependency "identity_center" {
+  config_path = "../../../abotyan001/us-east-1/01-identity-center"
+
+  mock_outputs = {
+    dns_zone_writer_role_arn = "arn:aws:iam::000000000000:role/mock-dns-zone-writer"
+    secrets_reader_role_arn  = "arn:aws:iam::000000000000:role/mock-secrets-reader"
+    dns_zone_name            = "mock.example.com"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
+}
+
 inputs = {
   # SSO profile for account_id 841775659851, role "devops-admin" — that
   # permission set is assigned org-wide by modules/identity-center/permission_sets.tf,
@@ -40,6 +54,10 @@ inputs = {
   environment = "dev"
   region      = "us-east-1"
   repo_root   = get_repo_root()
+
+  dns_zone_writer_role_arn = dependency.identity_center.outputs.dns_zone_writer_role_arn
+  secrets_reader_role_arn  = dependency.identity_center.outputs.secrets_reader_role_arn
+  dns_zone_name            = dependency.identity_center.outputs.dns_zone_name
 
   cluster_name                       = dependency.eks_cluster.outputs.cluster_name
   cluster_endpoint                   = dependency.eks_cluster.outputs.cluster_endpoint

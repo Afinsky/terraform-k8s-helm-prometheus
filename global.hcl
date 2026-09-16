@@ -15,23 +15,10 @@ locals {
     terraform = "true"
   }
 
-  # modules/eks-cluster's Route53 zone, and the role it assumes to write into it
-  # cross-account — both live in the management account (abotyan001), not
-  # wherever modules/eks-cluster itself gets applied. One zone/role for the
-  # whole Organization, so these are global rather than per-account/layer
-  # inputs. Source of truth: accounts/abotyan001/us-east-1/01-identity-center's
-  # dns_zone_writer_role_arn/dns_zone_id/dns_zone_name outputs — update these
-  # by hand if that stack is ever re-applied with a different zone/role.
-  dns_zone_writer_role_arn = "arn:aws:iam::417886991962:role/dns-zone-writer"
-  dns_zone_id              = "Z03682881TYQWE74HYLWJ"
-  dns_zone_name            = "abotyan.click"
-
-  # modules/eks-workloads' external-secrets assumes this (from any account)
-  # to read app secrets out of Secrets Manager in the management account -
-  # same cross-account-writer-role pattern as dns_zone_writer_role_arn
-  # above, and same caveat: source of truth is
-  # accounts/abotyan001/us-east-1/01-identity-center's
-  # secrets_reader_role_arn output, update this by hand if that stack is
-  # ever re-applied with a different role name.
-  secrets_reader_role_arn = "arn:aws:iam::417886991962:role/secrets-reader"
+  # dns_zone_writer_role_arn/dns_zone_id/dns_zone_name/secrets_reader_role_arn
+  # used to live here as hardcoded literals ("update by hand if
+  # 01-identity-center is ever re-applied with a different zone/role") -
+  # every eks-cluster/eks-workloads terragrunt.hcl now reads them live via a
+  # `dependency "identity_center"` block instead (see any of those files'
+  # comment for why), so they're not needed globally anymore.
 }

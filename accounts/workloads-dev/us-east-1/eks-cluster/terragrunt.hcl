@@ -16,6 +16,25 @@ terraform {
   source = "${get_repo_root()}/modules/eks-cluster"
 }
 
+# dns_zone_writer_role_arn/dns_zone_id/dns_zone_name come from
+# 01-identity-center's own state, in the abotyan001 account - not this
+# one. Cross-account is not an issue: `dependency` runs `terragrunt output`
+# in 01-identity-center's own directory, under its own configured profile
+# ("terraform"), not this account's credentials. See
+# accounts/abotyan001/us-east-1/eks-cluster/terragrunt.hcl's identical
+# dependency for the fuller rationale (this used to be a hardcoded literal
+# in global.hcl).
+dependency "identity_center" {
+  config_path = "../../../abotyan001/us-east-1/01-identity-center"
+
+  mock_outputs = {
+    dns_zone_writer_role_arn = "arn:aws:iam::000000000000:role/mock-dns-zone-writer"
+    dns_zone_id              = "MOCK00000000000000000"
+    dns_zone_name            = "mock.example.com"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
+}
+
 inputs = {
   # SSO profile for account_id 841775659851, role "devops-admin" — that
   # permission set is assigned org-wide by modules/identity-center/permission_sets.tf,
@@ -24,6 +43,10 @@ inputs = {
   environment = "dev"
   region      = "us-east-1"
   repo_root   = get_repo_root()
+
+  dns_zone_writer_role_arn = dependency.identity_center.outputs.dns_zone_writer_role_arn
+  dns_zone_id              = dependency.identity_center.outputs.dns_zone_id
+  dns_zone_name            = dependency.identity_center.outputs.dns_zone_name
 
   # EKS public API endpoint is restricted to this IP.
   # Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com

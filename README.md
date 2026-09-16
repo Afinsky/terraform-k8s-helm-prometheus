@@ -148,7 +148,7 @@ the live cluster; nothing here references the gitops repo.
 
 ```
 root.hcl                          # Terragrunt root config: backend, version constraints, inputs
-global.hcl                        # project_name, common_tags, dns_zone_* (see "eks-cluster" above)
+global.hcl                        # project_name, common_tags
 modules/
   identity-center/                # all of layer 1's Terraform — see above
   eks-cluster/                    # all of layer 2's Terraform — see above

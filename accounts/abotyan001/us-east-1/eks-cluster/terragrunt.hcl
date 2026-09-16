@@ -17,11 +17,37 @@ terraform {
   source = "${get_repo_root()}/modules/eks-cluster"
 }
 
+# dns_zone_writer_role_arn/dns_zone_id/dns_zone_name used to be hardcoded
+# literals in global.hcl (a comment there said "update by hand if
+# 01-identity-center is ever re-applied with a different zone/role") -
+# switched to a live dependency instead, same as the eks_cluster dependency
+# in eks-workloads/terragrunt.hcl. Cross-account is not an issue here:
+# `dependency` runs `terragrunt output` in 01-identity-center's own
+# directory, under its own configured profile ("terraform"), not this
+# stack's - it doesn't need this account's credentials to read that state.
+dependency "identity_center" {
+  config_path = "../01-identity-center"
+
+  # Lets `plan`/`validate` work before 01-identity-center has ever been
+  # applied - `apply` still requires real outputs, since only
+  # "validate"/"plan"/"init" are in mock_outputs_allowed_terraform_commands.
+  mock_outputs = {
+    dns_zone_writer_role_arn = "arn:aws:iam::000000000000:role/mock-dns-zone-writer"
+    dns_zone_id              = "MOCK00000000000000000"
+    dns_zone_name            = "mock.example.com"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
+}
+
 inputs = {
   profile     = "abotyan001-root.devops-admin"
   environment = "dev"
   region      = "us-east-1"
   repo_root   = get_repo_root()
+
+  dns_zone_writer_role_arn = dependency.identity_center.outputs.dns_zone_writer_role_arn
+  dns_zone_id              = dependency.identity_center.outputs.dns_zone_id
+  dns_zone_name            = dependency.identity_center.outputs.dns_zone_name
 
   # EKS public API endpoint is restricted to this IP.
   # Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com
