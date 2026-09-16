@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.5...v1.2.6) (2026-09-16)
+
+
+### Bug Fixes
+
+* **eks-workloads:** correct external-dns Route53 assume-role flag and… ([#20](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/20)) ([59877e8](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/59877e8105403c834a2b93225c72472995f3cff1))
+
 ## [1.2.5](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.4...v1.2.5) (2026-09-15)
 
 
