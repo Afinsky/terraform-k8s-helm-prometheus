@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.8](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.7...v1.2.8) (2026-09-16)
+
+
+### Bug Fixes
+
+* **security:** re-enable trivy scanning and remediate findings ([#22](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/22)) ([d6a92d9](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/d6a92d963167fbbc17bdb4582a4b853fd23a823f))
+
 ## [1.2.7](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.6...v1.2.7) (2026-09-16)
 
 
