@@ -27,29 +27,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Installs every tool pinned in mise.toml (terraform, terragrunt,
-      # tflint, terraform-docs, trivy, gitleaks, pre-commit, python) at the
-      # exact versions used locally - no separate version pins to keep in
-      # sync here.
-      - name: Install mise-pinned tools
+      - name: Mise Action
         uses: jdx/mise-action@v2
-        with:
-          install: true
 
-      # pre-commit-terraform's terraform_tflint hook runs one shared
-      # `tflint --init` before checking each module directory - reliable on
-      # a machine with a warm plugin cache (~/.tflint.d/plugins), but on a
-      # cold CI runner it races the per-directory tflint invocations and
-      # they fail with "Plugin \"aws\" not found" (reproduced live in this
-      # workflow before adding this step). Installing the plugin for every
-      # module up front, before pre-commit ever runs, sidesteps that race.
-      - name: Pre-install tflint plugins
-        run: |
-          for d in modules/*/; do
-            if [ -f "${d}.tflint.hcl" ]; then
-              (cd "$d" && mise exec -- tflint --init)
-            fi
-          done
+      - name: Run make setup
+        run: make setup
 
-      - name: Run pre-commit
-        run: mise exec -- pre-commit run --all-files
+      - name: Run make lint
+        run: make lint
