@@ -46,11 +46,18 @@ kustomize = "5.7"
 # AWS auth for every terraform command (provider.tf reads ~/.aws/*, profile
 # `terraform`) and for `aws eks update-kubeconfig`.
 awscli     = "2"
+# `aws-sso-util configure populate` — generates ~/.aws/config SSO profile
+# blocks for every permission set/account pair from modules/identity-center's
+# live state, instead of hand-writing each `<account-alias>-<role-name>`
+# profile (see ~/.aws/config's naming convention in CLAUDE.md).
+"pipx:aws-sso-util" = "latest"
 # Hook runner for .pre-commit-config.yaml (`make pre-commit`).
 pre-commit = "4"
 # Runtime for pre-commit itself and its Python-based hooks
 # (conventional-pre-commit, pre-commit-hooks).
 python     = "3.12"
+# Required by mise's pipx backend, used below for aws-sso-util.
+pipx       = "latest"
 
 # Not managed here on purpose:
 #  - node / semantic-release      -> CI only (.github/workflows/release.yaml)

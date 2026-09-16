@@ -18,7 +18,7 @@ terraform {
 }
 
 inputs = {
-  profile     = "abotyan001-devops-admin" #"terraform"
+  profile     = "abotyan001-root.devops-admin" #"abotyan001-devops-admin" #"terraform"
   environment = "dev"
   region      = "us-east-1"
   repo_root   = get_repo_root()

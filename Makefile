@@ -12,10 +12,14 @@ ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
 
 # aws sso login profile for the default ACCOUNT (abotyan001). "01-identity-center" doesn't
 # use it — see modules/identity-center/provider.tf for why "terraform" (a static IAM user)
-# is used there instead. Naming convention: <account-alias>-<role-name> (~/.aws/config).
+# is used there instead. Naming convention: <account-alias>.<role-name> (~/.aws/config).
 IAM_ROLE := abotyan001-devops-admin
 
 LOCK_ID :=
+
+PORTAL_URL := https://abatsian.awsapps.com/start
+SSO_REGION := us-east-1
+REGION := us-east-1
 
 .DEFAULT: help # Running Make will run the help target
 
@@ -30,7 +34,7 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 	@for dir in accounts/*/; do \
 		alias=$$(basename "$$dir"); \
 		id=$$(grep -oE 'aws_account_id[[:space:]]*=[[:space:]]*"[^"]*"' "$$dir/account.hcl" 2>/dev/null | grep -oE '"[^"]*"' | tr -d '"'); \
-		layers=$$(find "$$dir" -mindepth 3 -maxdepth 3 -name terragrunt.hcl | sed "s#$$dir##;s#us-east-1/##;s#/terragrunt.hcl##" | sort | tr '\n' ' '); \
+		layers=$$(find "$$dir" -mindepth 3 -maxdepth 3 -name terragrunt.hcl | sed "s#$$dir##;s#$(REGION)/##;s#/terragrunt.hcl##" | sort | tr '\n' ' '); \
 		printf "\033[36m  %-16s\033[0m %-16s %s\n" "$$alias" "$${id:-?}" "$$layers"; \
 	done
 
@@ -69,9 +73,11 @@ lint: ## run all pre-commit checks across the repo
 # Use aws-sso-util
 # https://github.com/benkehoe/aws-sso-util
 # ----------------------------------------------------------------
-login: ## aws sso login (IAM_ROLE profile, default abotyan001-devops-admin)
-	aws sso login --profile $(IAM_ROLE)
+login: ## aws-sso-util login
+	mise exec -- aws-sso-util login --sso-start-url $(PORTAL_URL) --sso-region $(SSO_REGION)
 
+logout: ## aws-sso-util logout
+	mise exec -- aws-sso-util logout
 # ----------------------------------------------------------------
 # Terragrunt layers
 #
@@ -147,6 +153,15 @@ force-unlock: ## make <layer> force-unlock LOCK_ID=<id>
 		--non-interactive \
 		--backend-bootstrap \
 		$(LOCK_ID)
+
+aws-sso-configure-populate: ## aws-sso-util configure populate (creates ~/.aws/config entries for all accounts)
+	mise exec -- aws-sso-util configure populate \
+  		--sso-start-url $(PORTAL_URL) \
+  		--sso-region $(SSO_REGION) \
+  		--region $(REGION) \
+  		--components account_name,role_name \
+  		--separator '-'
+
 
 # ----------------------------------------------------------------
 # utils
