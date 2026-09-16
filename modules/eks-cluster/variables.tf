@@ -33,7 +33,7 @@ variable "my_ip_cidr" {
 
 variable "aws_account_id" {
   type        = string
-  description = "Expected AWS account ID (from accounts/abotyan001/account.hcl, passed by Terragrunt). Guards provider.tf's allowed_account_ids against an apply landing in the wrong AWS account/profile."
+  description = "Expected AWS account ID (from account.hcl, passed by Terragrunt). Guards provider.tf's allowed_account_ids against an apply landing in the wrong AWS account/profile."
 }
 
 variable "dns_zone_writer_role_arn" {

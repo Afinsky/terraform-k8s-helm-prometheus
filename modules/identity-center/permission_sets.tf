@@ -4,6 +4,24 @@
 # list (data.tf), not hardcoded IDs. Add an account in accounts.tf and any
 # permission set whose account_patterns match its name picks it up on the
 # next apply, no other edit needed.
+#
+# What each field actually does, since "permission set" and "IAM role" get
+# conflated easily:
+#   - A permission set (aws_ssoadmin_permission_set below) is just a policy
+#     template that lives in Identity Center - it isn't an IAM role, and by
+#     itself it exists in no AWS account at all.
+#   - `group` says WHO gets it: exactly one Identity Center group per
+#     permission set here (sso.tf's aws_identitystore_group) - a group has no
+#     permissions of its own outside of this.
+#   - `account_patterns` says WHERE: every account whose name matches gets
+#     its own aws_ssoadmin_account_assignment for this (permission set,
+#     group) pair.
+#   - Each assignment is what makes AWS auto-provision a real, separate IAM
+#     role inside that one account, named
+#     AWSReservedSSO_<permission-set-name>_<random-suffix> - matching
+#     permission sets in 2 accounts means 2 independent IAM roles (different
+#     suffixes), not one role shared across accounts. Any current member of
+#     `group` can then SSO into that specific account as that role.
 locals {
   # name => id for every ACTIVE account in the org, management account
   # included (it's a member of the org root OU too).
