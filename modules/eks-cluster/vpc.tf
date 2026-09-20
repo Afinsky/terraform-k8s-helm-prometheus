@@ -2,6 +2,10 @@
 # VPC
 ################################################################################
 
+# Registry source, not a raw git URL - a pinned exact version here is
+# already immutable (the registry doesn't let a published version move) and
+# checksummed via .terraform.lock.hcl, same supply-chain guarantee a
+# commit-hash-pinned git ref would give.
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "v6.6.1"

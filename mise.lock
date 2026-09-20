@@ -89,6 +89,11 @@ version = "4.33.0"
 backend = "pipx:aws-sso-util"
 specifiers = ["latest"]
 
+[[tools."pipx:checkov"]]
+version = "3.3.19"
+backend = "pipx:checkov"
+specifiers = ["latest"]
+
 [[tools.pre-commit]]
 version = "4.6.2"
 backend = "aqua:pre-commit/pre-commit"

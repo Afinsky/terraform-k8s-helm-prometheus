@@ -57,8 +57,13 @@ pre-commit = "4"
 # Runtime for pre-commit itself and its Python-based hooks
 # (conventional-pre-commit, pre-commit-hooks).
 python     = "3.12"
-# Required by mise's pipx backend, used below for aws-sso-util.
+# Required by mise's pipx backend, used below for aws-sso-util/checkov.
 pipx       = "latest"
+# local pre-commit hook `checkov` in .pre-commit-config.yaml calls this binary
+# directly, same "no rebuild every commit" reasoning as trivy/gitleaks above -
+# the official bridgecrewio/checkov pre-commit hook builds its own venv fresh
+# on the first run in any environment without one cached.
+"pipx:checkov" = "latest"
 
 # Not managed here on purpose:
 #  - node / semantic-release      -> CI only (.github/workflows/release.yaml)

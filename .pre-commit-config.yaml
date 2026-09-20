@@ -73,3 +73,8 @@ repos:
         entry: >-
           trivy config --cache-dir .pre-commit-trivy-cache --exit-code 1
           --config trivy.yaml .
+      - id: checkov
+        name: checkov
+        language: system
+        pass_filenames: false
+        entry: mise exec -- checkov --config-file .checkov.yaml
