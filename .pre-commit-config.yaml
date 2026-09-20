@@ -65,11 +65,11 @@ repos:
         pass_filenames: false
         entry: >-
           trivy fs --cache-dir .pre-commit-trivy-cache --exit-code 1
-          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
+          --config trivy.yaml .
       - id: trivyconfig
         name: trivyconfig
         language: system
         pass_filenames: false
         entry: >-
           trivy config --cache-dir .pre-commit-trivy-cache --exit-code 1
-          --severity CRITICAL,HIGH --skip-dirs "**/.terraform,**/.terragrunt-cache" .
+          --config trivy.yaml .
