@@ -57,18 +57,6 @@ repos:
     hooks:
       - id: gitleaks
 
-  # mxab/pre-commit-trivy only ships "-docker" hook variants (language: docker_image), which
-  # need the Docker daemon running for every commit. The hooks below (currently disabled, see
-  # the TODO) call the `trivy` binary directly instead (pinned via mise.toml) — same checks, no
-  # Docker dependency.
-  #
-  # --severity CRITICAL,HIGH only: a full scan of this repo turned up 108 findings, mostly
-  # LOW/MEDIUM Kubernetes hardening nits (seccompProfile, non-default namespace, etc.) plus a
-  # few HIGH/CRITICAL findings that are deliberate homelab tradeoffs (public EKS API endpoint
-  # restricted to one IP, public subnets for cost). Blocking on the full set would leave every
-  # commit permanently red. Run without --severity locally to see everything.
-
-# Temporarily disabled #TODO: ...
   - repo: local
     hooks:
       - id: trivyfs
