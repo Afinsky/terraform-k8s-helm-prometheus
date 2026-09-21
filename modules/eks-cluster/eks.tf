@@ -46,7 +46,7 @@ module "eks" {
     # freely moves it afterward without fighting Terraform on every apply.
     generalworkload-v4 = {
       min_size       = 2
-      max_size       = 2
+      max_size       = 3
       desired_size   = 2
       instance_types = ["t3.medium"] # "m5a.xlarge"
       capacity_type  = "SPOT"

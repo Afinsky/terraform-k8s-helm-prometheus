@@ -1,0 +1,206 @@
+name: Plan
+
+# Runs `terragrunt plan` against every layer on every PR - the gap
+# docs/setup_evaluation.md flagged as item #1. pr-checks.yml deliberately
+# stayed credential-free (see its own comment); this workflow is the
+# "separate, explicit decision" that comment pointed at: it assumes an
+# AWS role via OIDC (modules/identity-center/github_oidc.tf's
+# github-actions-plan, ReadOnlyAccess only - this workflow has no
+# credential path to anything that writes).
+#
+# Five layers, matching the account_access_stackset.tf chain used
+# elsewhere in this repo: abotyan001's three layers assume
+# github-actions-plan directly; workloads-dev's two layers chain through
+# it into github-actions-plan-target (auto-deployed into every member
+# account by that same StackSet).
+#
+# Requires (not yet done as of writing this workflow - apply
+# modules/identity-center's github_oidc.tf / account_access_stackset.tf
+# changes first): a repository variable GHA_PLAN_ROLE_ARN set to
+# github-actions-plan's ARN (see that stack's github_actions_plan_role_arn
+# output).
+on:
+  pull_request:
+
+concurrency:
+  group: plan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+  pull-requests: write # to comment the plan onto the PR
+
+jobs:
+  plan:
+    name: plan (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 01-identity-center
+            layer: accounts/abotyan001/us-east-1/01-identity-center
+            profile: terraform
+            chain: false
+          # No abotyan001/eks-cluster or eks-workloads entries here on
+          # purpose - by design, no workload account infra runs in the
+          # management account (abotyan001), only 01-identity-center.
+          # Those two layer directories are leftover copies from before
+          # workloads-dev existed and were never really applied there (and
+          # never will be) - eks-workloads' kubernetes/helm providers can't
+          # produce a meaningful plan without a real cluster behind them
+          # regardless of any CI credentials, since a dependency that has
+          # never been applied only ever gives them a mock endpoint to
+          # dial. Once those directories are removed from the repo, drop
+          # this comment along with them.
+          - name: workloads-dev/eks-cluster
+            layer: accounts/workloads-dev/us-east-1/eks-cluster
+            profile: workloads-dev.devops-admin
+            chain: true
+          # workloads-dev/eks-workloads is temporarily NOT in this matrix -
+          # unlike abotyan001's leftover layers above, this one IS the real
+          # target and belongs here once its eks-cluster dependency has
+          # actually been applied for the first time. Until then, its
+          # kubernetes/helm providers have no real cluster to reach (same
+          # structural wall as abotyan001's, just not permanent this time) -
+          # add this entry back right after that first apply:
+          #   - name: workloads-dev/eks-workloads
+          #     layer: accounts/workloads-dev/us-east-1/eks-workloads
+          #     profile: workloads-dev.devops-admin
+          #     chain: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mise Action
+        uses: jdx/mise-action@v2
+
+      - name: Run make setup
+        run: make setup
+
+      # Assumes github-actions-plan directly. For workloads-dev layers this
+      # is only the FIRST hop - see "Chain into member-account role" below.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_PLAN_ROLE_ARN }}
+          role-session-name: gha-plan-${{ github.run_id }}
+          aws-region: us-east-1
+
+      # root.hcl's remote_state.profile (= state_profile, account.hcl) is a
+      # THIRD profile, distinct from matrix.profile (the AWS *provider*'s
+      # profile) - it's what the S3 backend itself, and
+      # --dependency-fetch-output-from-state below, use to read a layer's
+      # state. For abotyan001 it's always "terraform" (the default, never
+      # overridden there) regardless of which of its 3 layers you're in -
+      # and every eks-cluster/eks-workloads layer in ANY account declares a
+      # `dependency "identity_center"` pointing at abotyan001's
+      # 01-identity-center, so this profile is needed everywhere, not just
+      # in abotyan001's own jobs. Written here, from the base
+      # github-actions-plan session (ReadOnlyAccess in abotyan001), before
+      # the workloads-dev chaining below overwrites the ambient AWS_* env
+      # vars with a different account's credentials.
+      - name: Write "terraform" profile (abotyan001 state/dependency reads)
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile terraform
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile terraform
+          aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile terraform
+          aws configure set region us-east-1 --profile terraform
+
+      # workloads-dev's own account ID (841775659851, account.hcl) - chains
+      # sts:AssumeRole from github-actions-plan into
+      # github-actions-plan-target, same shape as this repo's own
+      # terraform -> terraform-management -> terraform-target chain.
+      - name: Chain into member-account role
+        if: matrix.chain
+        run: |
+          creds=$(aws sts assume-role \
+            --role-arn arn:aws:iam::841775659851:role/github-actions-plan-target \
+            --role-session-name gha-plan-target-${{ github.run_id }} \
+            --query Credentials --output json)
+          {
+            echo "AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r .AccessKeyId)"
+            echo "AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r .SecretAccessKey)"
+            echo "AWS_SESSION_TOKEN=$(echo "$creds" | jq -r .SessionToken)"
+          } >> "$GITHUB_ENV"
+
+      # workloads-dev/account.hcl overrides state_profile to
+      # "terraform-management" - every workloads-dev layer's OWN backend
+      # (root.hcl's remote_state) reads/writes through this profile name,
+      # not matrix.profile below, and (once workloads-dev/eks-workloads is
+      # back in this matrix - see the commented-out entry above) so does
+      # its `dependency "eks_cluster"` (same account). Needs the
+      # just-chained credentials, not the base session written above.
+      - name: Write "terraform-management" profile (workloads-dev state reads)
+        if: matrix.chain
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile terraform-management
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile terraform-management
+          aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile terraform-management
+          aws configure set region us-east-1 --profile terraform-management
+
+      # provider.tf in every module reads a *named* profile
+      # (`profile = var.profile`, set per-layer by that layer's
+      # terragrunt.hcl), not bare env-var credentials - write the session's
+      # credentials into the exact profile name each layer expects instead
+      # of touching any terragrunt.hcl.
+      - name: Write AWS profile this layer's terragrunt.hcl expects
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile ${{ matrix.profile }}
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile ${{ matrix.profile }}
+          aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile ${{ matrix.profile }}
+          aws configure set region us-east-1 --profile ${{ matrix.profile }}
+
+      # --dependency-fetch-output-from-state: eks-cluster/eks-workloads read
+      # dependency outputs (identity_center, eks_cluster) via a `dependency`
+      # block, which by default shells out to `terraform init`+`output`
+      # inside the DEPENDENCY's own directory using ITS OWN backend profile
+      # (root.hcl's remote_state.profile, written above) - a profile this
+      # job never configured before, so that failed with "Backend
+      # initialization required" / "failed to get shared config profile" on
+      # every fresh matrix-job checkout. This flag instead reads the
+      # dependency's outputs straight out of its S3 state object, using
+      # that same profile.
+      # -lock=false: `plan` never needs to lock the state it's reading;
+      # skips the native S3 lockfile PutObject/DeleteObject that
+      # ReadOnlyAccess (deliberately, see github_oidc.tf) can't perform.
+      #
+      # unset AWS_*: the AWS SDK prefers ambient env credentials over any
+      # named profile, for both --dependency-fetch-output-from-state's S3
+      # client and (we suspect) the aws provider's own profile resolution -
+      # for a chained (workloads-dev) job those ambient creds are
+      # github-actions-plan-target, wrong for reads that need the base
+      # github-actions-plan identity (e.g. identity_center's state, in
+      # abotyan001). provider.tf's own comment already says the intent was
+      # always named-profile resolution ("not bare env-var credentials") -
+      # every profile this job needs was written above, so ambient env
+      # was only ever a vehicle for `aws configure set`, never meant to
+      # reach terraform/terragrunt itself.
+      - name: terragrunt plan
+        id: plan
+        run: |
+          set -o pipefail
+          unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
+          terragrunt plan \
+            --working-dir ${{ matrix.layer }} \
+            --non-interactive \
+            --backend-bootstrap \
+            --dependency-fetch-output-from-state \
+            -no-color \
+            -lock=false 2>&1 | tee plan-output.txt
+
+      - name: Comment plan on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('plan-output.txt', 'utf8').slice(-60000);
+            const body = `#### Plan: \`${{ matrix.name }}\`\n<details><summary>Show plan</summary>\n\n\`\`\`\n${output}\n\`\`\`\n</details>`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
