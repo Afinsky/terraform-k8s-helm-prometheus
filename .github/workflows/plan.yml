@@ -105,6 +105,19 @@ jobs:
           aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile ${{ matrix.profile }}
           aws configure set region us-east-1 --profile ${{ matrix.profile }}
 
+      # --dependency-fetch-output-from-state: eks-cluster/eks-workloads read
+      # dependency outputs (identity_center, eks_cluster) via a `dependency`
+      # block, which by default shells out to `terraform init`+`output`
+      # inside the DEPENDENCY's own directory using ITS OWN provider.tf
+      # profile - a profile this job never configures (it only writes
+      # credentials for its own matrix.profile), so that fails with
+      # "Backend initialization required" on every fresh matrix-job
+      # checkout. This flag reads the dependency's outputs straight out of
+      # its S3 state object instead, using this job's already-exported
+      # AWS_* env credentials - no extra profile or write access needed.
+      # -lock=false: `plan` never needs to lock the state it's reading;
+      # skips the native S3 lockfile PutObject/DeleteObject that
+      # ReadOnlyAccess (deliberately, see github_oidc.tf) can't perform.
       - name: terragrunt plan
         id: plan
         run: |
@@ -113,7 +126,9 @@ jobs:
             --working-dir ${{ matrix.layer }} \
             --non-interactive \
             --backend-bootstrap \
-            -no-color 2>&1 | tee plan-output.txt
+            --dependency-fetch-output-from-state \
+            -no-color \
+            -lock=false 2>&1 | tee plan-output.txt
 
       - name: Comment plan on PR
         if: always()
