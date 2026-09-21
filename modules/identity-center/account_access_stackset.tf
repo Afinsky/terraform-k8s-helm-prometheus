@@ -73,6 +73,26 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
             }]
           }
           ManagedPolicyArns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
+          # ReadOnlyAccess alone doesn't include sts:AssumeRole. A member
+          # account's modules/eks-cluster (e.g. workloads-dev's) has an
+          # aws.dns provider that assumes dns-zone-writer, back in this
+          # (management) account, to preview the ACM DNS-validation record
+          # diff - dns.tf's trust condition lists this role by name for that
+          # reason. Not a write-capability escalation: dns-zone-writer's own
+          # permissions are what could write to Route53, and `terragrunt
+          # plan` never calls them.
+          Policies = [{
+            PolicyName = "assume-dns-zone-writer"
+            PolicyDocument = {
+              Version = "2012-10-17"
+              Statement = [{
+                Sid      = "AssumeDnsZoneWriter"
+                Effect   = "Allow"
+                Action   = "sts:AssumeRole"
+                Resource = aws_iam_role.dns_zone_writer.arn
+              }]
+            }
+          }]
         }
       }
     }

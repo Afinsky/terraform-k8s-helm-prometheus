@@ -39,6 +39,18 @@ resource "aws_iam_role" "dns_zone_writer" {
           "aws:PrincipalArn" = [
             "arn:aws:iam::*:role/*-external-dns",
             "arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_devops-admin_*",
+            # .github/workflows/plan.yml's read-only CI plan: modules/eks-cluster's
+            # aws.dns provider (provider.tf) assumes this role to preview the ACM
+            # DNS-validation record diff, same as a real devops-admin apply does.
+            # github_actions_plan (this account) for abotyan001's own eks-cluster;
+            # github-actions-plan-target (wildcarded - account_access_stackset.tf
+            # deploys it into every member account) once chained for a member
+            # account's eks-cluster, e.g. workloads-dev's. Both are ReadOnlyAccess
+            # only otherwise (github_oidc.tf/account_access_stackset.tf) - this is
+            # the one door either can open, and it's the same door a real apply
+            # already walks through.
+            aws_iam_role.github_actions_plan.arn,
+            "arn:aws:iam::*:role/github-actions-plan-target",
           ]
         }
       }

@@ -61,25 +61,40 @@ resource "aws_iam_role_policy_attachment" "github_actions_plan" {
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
-# ReadOnlyAccess alone doesn't include sts:AssumeRole, so plan.yml's "Chain
-# into member-account role" step (assuming github-actions-plan-target to
-# plan workloads-dev's layers) had no identity-policy grant to actually do
-# that - same gap terraform_management.tf's assume-terraform-target policy
-# fixes for the human "terraform" -> terraform-management -> terraform-target
-# chain, mirrored here. Scoped to just this one role name in any member
-# account (account_access_stackset.tf deploys github-actions-plan-target
-# itself, always ReadOnlyAccess) - not a write-capability grant.
-resource "aws_iam_role_policy" "github_actions_plan_assume_target" {
-  name = "assume-github-actions-plan-target"
+# ReadOnlyAccess alone doesn't include sts:AssumeRole, so this role had no
+# identity-policy grant letting it actually assume anything it's trusted to
+# assume - two places need that (mirroring terraform_management.tf's
+# assume-terraform-target policy for the human "terraform" ->
+# terraform-management -> terraform-target chain):
+#   - github-actions-plan-target (account_access_stackset.tf, wildcarded -
+#     deployed into every member account): plan.yml's "Chain into
+#     member-account role" step, to plan workloads-dev's (and any future
+#     member account's) layers.
+#   - dns-zone-writer (dns.tf, this account only): modules/eks-cluster's
+#     aws.dns provider, to preview the ACM DNS-validation record diff -
+#     dns.tf's trust condition lists this role for the same reason.
+# Neither grant is a write-capability escalation: github-actions-plan-target
+# is ReadOnlyAccess only, and dns-zone-writer's own permissions are the only
+# thing that could write to Route53 - `terragrunt plan` never calls them.
+resource "aws_iam_role_policy" "github_actions_plan_assume_roles" {
+  name = "assume-target-roles"
   role = aws_iam_role.github_actions_plan.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Sid      = "AssumeGithubActionsPlanTargetInAnyMemberAccount"
-      Effect   = "Allow"
-      Action   = "sts:AssumeRole"
-      Resource = "arn:aws:iam::*:role/github-actions-plan-target"
-    }]
+    Statement = [
+      {
+        Sid      = "AssumeGithubActionsPlanTargetInAnyMemberAccount"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = "arn:aws:iam::*:role/github-actions-plan-target"
+      },
+      {
+        Sid      = "AssumeDnsZoneWriter"
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = aws_iam_role.dns_zone_writer.arn
+      },
+    ]
   })
 }
