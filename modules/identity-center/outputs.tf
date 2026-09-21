@@ -38,6 +38,11 @@ output "dns_zone_name" {
   description = "Domain this Organization's Route53 zone manages."
 }
 
+output "github_actions_plan_role_arn" {
+  value       = aws_iam_role.github_actions_plan.arn
+  description = ".github/workflows/plan.yml assumes this via OIDC (no stored credentials) to plan the management account's own layers, and chains through it to assume github-actions-plan-target (account_access_stackset.tf) in every member account."
+}
+
 output "secrets_reader_role_arn" {
   value       = aws_iam_role.secrets_reader.arn
   description = "modules/eks-workloads' external-secrets assumes this (from any account) to read app secrets out of Secrets Manager here."

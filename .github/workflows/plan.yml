@@ -1,0 +1,131 @@
+name: Plan
+
+# Runs `terragrunt plan` against every layer on every PR - the gap
+# docs/setup_evaluation.md flagged as item #1. pr-checks.yml deliberately
+# stayed credential-free (see its own comment); this workflow is the
+# "separate, explicit decision" that comment pointed at: it assumes an
+# AWS role via OIDC (modules/identity-center/github_oidc.tf's
+# github-actions-plan, ReadOnlyAccess only - this workflow has no
+# credential path to anything that writes).
+#
+# Five layers, matching the account_access_stackset.tf chain used
+# elsewhere in this repo: abotyan001's three layers assume
+# github-actions-plan directly; workloads-dev's two layers chain through
+# it into github-actions-plan-target (auto-deployed into every member
+# account by that same StackSet).
+#
+# Requires (not yet done as of writing this workflow - apply
+# modules/identity-center's github_oidc.tf / account_access_stackset.tf
+# changes first): a repository variable GHA_PLAN_ROLE_ARN set to
+# github-actions-plan's ARN (see that stack's github_actions_plan_role_arn
+# output).
+on:
+  pull_request:
+
+concurrency:
+  group: plan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  id-token: write # required for OIDC
+  contents: read
+  pull-requests: write # to comment the plan onto the PR
+
+jobs:
+  plan:
+    name: plan (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: 01-identity-center
+            layer: accounts/abotyan001/us-east-1/01-identity-center
+            profile: terraform
+            chain: false
+          - name: abotyan001/eks-cluster
+            layer: accounts/abotyan001/us-east-1/eks-cluster
+            profile: abotyan001-root.devops-admin
+            chain: false
+          - name: abotyan001/eks-workloads
+            layer: accounts/abotyan001/us-east-1/eks-workloads
+            profile: abotyan001-root.devops-admin
+            chain: false
+          - name: workloads-dev/eks-cluster
+            layer: accounts/workloads-dev/us-east-1/eks-cluster
+            profile: workloads-dev.devops-admin
+            chain: true
+          - name: workloads-dev/eks-workloads
+            layer: accounts/workloads-dev/us-east-1/eks-workloads
+            profile: workloads-dev.devops-admin
+            chain: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Mise Action
+        uses: jdx/mise-action@v2
+
+      - name: Run make setup
+        run: make setup
+
+      # Assumes github-actions-plan directly. For workloads-dev layers this
+      # is only the FIRST hop - see "Chain into member-account role" below.
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.GHA_PLAN_ROLE_ARN }}
+          role-session-name: gha-plan-${{ github.run_id }}
+          aws-region: us-east-1
+
+      # workloads-dev's own account ID (841775659851, account.hcl) - chains
+      # sts:AssumeRole from github-actions-plan into
+      # github-actions-plan-target, same shape as this repo's own
+      # terraform -> terraform-management -> terraform-target chain.
+      - name: Chain into member-account role
+        if: matrix.chain
+        run: |
+          creds=$(aws sts assume-role \
+            --role-arn arn:aws:iam::841775659851:role/github-actions-plan-target \
+            --role-session-name gha-plan-target-${{ github.run_id }} \
+            --query Credentials --output json)
+          echo "AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r .AccessKeyId)" >> "$GITHUB_ENV"
+          echo "AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r .SecretAccessKey)" >> "$GITHUB_ENV"
+          echo "AWS_SESSION_TOKEN=$(echo "$creds" | jq -r .SessionToken)" >> "$GITHUB_ENV"
+
+      # provider.tf in every module reads a *named* profile
+      # (`profile = var.profile`, set per-layer by that layer's
+      # terragrunt.hcl), not bare env-var credentials - write the session's
+      # credentials into the exact profile name each layer expects instead
+      # of touching any terragrunt.hcl.
+      - name: Write AWS profile this layer's terragrunt.hcl expects
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile ${{ matrix.profile }}
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile ${{ matrix.profile }}
+          aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile ${{ matrix.profile }}
+          aws configure set region us-east-1 --profile ${{ matrix.profile }}
+
+      - name: terragrunt plan
+        id: plan
+        run: |
+          set -o pipefail
+          terragrunt plan \
+            --working-dir ${{ matrix.layer }} \
+            --non-interactive \
+            --backend-bootstrap \
+            -no-color 2>&1 | tee plan-output.txt
+
+      - name: Comment plan on PR
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('plan-output.txt', 'utf8').slice(-60000);
+            const body = `#### Plan: \`${{ matrix.name }}\`\n<details><summary>Show plan</summary>\n\n\`\`\`\n${output}\n\`\`\`\n</details>`;
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });

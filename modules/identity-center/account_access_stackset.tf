@@ -23,7 +23,7 @@
 # README.md, "Order of operations", step 3.
 resource "aws_cloudformation_stack_set" "terraform_target" {
   name             = "terraform-target-role"
-  description      = "Provisions the terraform-target IAM role in every account of this Organization, trusting terraform-management (in the management account) only."
+  description      = "Provisions terraform-target and github-actions-plan-target IAM roles in every account of this Organization."
   permission_model = "SERVICE_MANAGED"
   capabilities     = ["CAPABILITY_NAMED_IAM"]
 
@@ -34,7 +34,7 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
 
   template_body = jsonencode({
     AWSTemplateFormatVersion = "2010-09-09"
-    Description              = "terraform-target: assumable only by terraform-management in the Organization's management account."
+    Description              = "terraform-target: assumable only by terraform-management. github-actions-plan-target: assumable only by github-actions-plan (github_oidc.tf) - both in the Organization's management account."
     Resources = {
       TerraformTargetRole = {
         Type = "AWS::IAM::Role"
@@ -54,6 +54,25 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
           # and IRSA role management) - narrowing this to a scoped
           # inline/managed policy is still a TODO, not done yet.
           ManagedPolicyArns = ["arn:aws:iam::aws:policy/AdministratorAccess"]
+        }
+      }
+      # Read-only counterpart to TerraformTargetRole, same chained-trust
+      # shape (see github_oidc.tf's comment) - lets .github/workflows/plan.yml
+      # plan a member account's layers (workloads-dev's eks-cluster/
+      # eks-workloads) without ever holding admin credentials for it.
+      GithubActionsPlanTargetRole = {
+        Type = "AWS::IAM::Role"
+        Properties = {
+          RoleName = "github-actions-plan-target"
+          AssumeRolePolicyDocument = {
+            Version = "2012-10-17"
+            Statement = [{
+              Effect    = "Allow"
+              Action    = "sts:AssumeRole"
+              Principal = { AWS = aws_iam_role.github_actions_plan.arn }
+            }]
+          }
+          ManagedPolicyArns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
         }
       }
     }
