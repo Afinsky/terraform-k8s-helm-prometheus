@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.9...v1.3.0) (2026-09-21)
+
+
+### Features
+
+* add GitHub Actions OIDC role and CI plan workflow for read-only… ([#24](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/24)) ([cd7c2a2](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/cd7c2a2c3a4dd788ffffb160c7c54b9af28589a1))
+
 ## [1.2.9](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.8...v1.2.9) (2026-09-21)
 
 
