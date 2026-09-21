@@ -58,10 +58,17 @@ jobs:
             layer: accounts/workloads-dev/us-east-1/eks-cluster
             profile: workloads-dev.devops-admin
             chain: true
-          - name: workloads-dev/eks-workloads
-            layer: accounts/workloads-dev/us-east-1/eks-workloads
-            profile: workloads-dev.devops-admin
-            chain: true
+          # workloads-dev/eks-workloads is temporarily NOT in this matrix -
+          # unlike abotyan001's leftover layers above, this one IS the real
+          # target and belongs here once its eks-cluster dependency has
+          # actually been applied for the first time. Until then, its
+          # kubernetes/helm providers have no real cluster to reach (same
+          # structural wall as abotyan001's, just not permanent this time) -
+          # add this entry back right after that first apply:
+          #   - name: workloads-dev/eks-workloads
+          #     layer: accounts/workloads-dev/us-east-1/eks-workloads
+          #     profile: workloads-dev.devops-admin
+          #     chain: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -119,11 +126,12 @@ jobs:
           } >> "$GITHUB_ENV"
 
       # workloads-dev/account.hcl overrides state_profile to
-      # "terraform-management" (its own bucket, reached via that account's
-      # own chain) - same reasoning as the "terraform" profile above, but
-      # for workloads-dev/eks-workloads' `dependency "eks_cluster"` (same
-      # account, so this needs the just-chained credentials, not the base
-      # session written above).
+      # "terraform-management" - every workloads-dev layer's OWN backend
+      # (root.hcl's remote_state) reads/writes through this profile name,
+      # not matrix.profile below, and (once workloads-dev/eks-workloads is
+      # back in this matrix - see the commented-out entry above) so does
+      # its `dependency "eks_cluster"` (same account). Needs the
+      # just-chained credentials, not the base session written above.
       - name: Write "terraform-management" profile (workloads-dev state reads)
         if: matrix.chain
         run: |
