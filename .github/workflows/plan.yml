@@ -43,14 +43,17 @@ jobs:
             layer: accounts/abotyan001/us-east-1/01-identity-center
             profile: terraform
             chain: false
-          - name: abotyan001/eks-cluster
-            layer: accounts/abotyan001/us-east-1/eks-cluster
-            profile: abotyan001-root.devops-admin
-            chain: false
-          - name: abotyan001/eks-workloads
-            layer: accounts/abotyan001/us-east-1/eks-workloads
-            profile: abotyan001-root.devops-admin
-            chain: false
+          # No abotyan001/eks-cluster or eks-workloads entries here on
+          # purpose - by design, no workload account infra runs in the
+          # management account (abotyan001), only 01-identity-center.
+          # Those two layer directories are leftover copies from before
+          # workloads-dev existed and were never really applied there (and
+          # never will be) - eks-workloads' kubernetes/helm providers can't
+          # produce a meaningful plan without a real cluster behind them
+          # regardless of any CI credentials, since a dependency that has
+          # never been applied only ever gives them a mock endpoint to
+          # dial. Once those directories are removed from the repo, drop
+          # this comment along with them.
           - name: workloads-dev/eks-cluster
             layer: accounts/workloads-dev/us-east-1/eks-cluster
             profile: workloads-dev.devops-admin
