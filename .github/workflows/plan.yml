@@ -78,6 +78,26 @@ jobs:
           role-session-name: gha-plan-${{ github.run_id }}
           aws-region: us-east-1
 
+      # root.hcl's remote_state.profile (= state_profile, account.hcl) is a
+      # THIRD profile, distinct from matrix.profile (the AWS *provider*'s
+      # profile) - it's what the S3 backend itself, and
+      # --dependency-fetch-output-from-state below, use to read a layer's
+      # state. For abotyan001 it's always "terraform" (the default, never
+      # overridden there) regardless of which of its 3 layers you're in -
+      # and every eks-cluster/eks-workloads layer in ANY account declares a
+      # `dependency "identity_center"` pointing at abotyan001's
+      # 01-identity-center, so this profile is needed everywhere, not just
+      # in abotyan001's own jobs. Written here, from the base
+      # github-actions-plan session (ReadOnlyAccess in abotyan001), before
+      # the workloads-dev chaining below overwrites the ambient AWS_* env
+      # vars with a different account's credentials.
+      - name: Write "terraform" profile (abotyan001 state/dependency reads)
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile terraform
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile terraform
+          aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile terraform
+          aws configure set region us-east-1 --profile terraform
+
       # workloads-dev's own account ID (841775659851, account.hcl) - chains
       # sts:AssumeRole from github-actions-plan into
       # github-actions-plan-target, same shape as this repo's own
@@ -92,6 +112,20 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r .AccessKeyId)" >> "$GITHUB_ENV"
           echo "AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r .SecretAccessKey)" >> "$GITHUB_ENV"
           echo "AWS_SESSION_TOKEN=$(echo "$creds" | jq -r .SessionToken)" >> "$GITHUB_ENV"
+
+      # workloads-dev/account.hcl overrides state_profile to
+      # "terraform-management" (its own bucket, reached via that account's
+      # own chain) - same reasoning as the "terraform" profile above, but
+      # for workloads-dev/eks-workloads' `dependency "eks_cluster"` (same
+      # account, so this needs the just-chained credentials, not the base
+      # session written above).
+      - name: Write "terraform-management" profile (workloads-dev state reads)
+        if: matrix.chain
+        run: |
+          aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile terraform-management
+          aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY" --profile terraform-management
+          aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile terraform-management
+          aws configure set region us-east-1 --profile terraform-management
 
       # provider.tf in every module reads a *named* profile
       # (`profile = var.profile`, set per-layer by that layer's
@@ -108,13 +142,13 @@ jobs:
       # --dependency-fetch-output-from-state: eks-cluster/eks-workloads read
       # dependency outputs (identity_center, eks_cluster) via a `dependency`
       # block, which by default shells out to `terraform init`+`output`
-      # inside the DEPENDENCY's own directory using ITS OWN provider.tf
-      # profile - a profile this job never configures (it only writes
-      # credentials for its own matrix.profile), so that fails with
-      # "Backend initialization required" on every fresh matrix-job
-      # checkout. This flag reads the dependency's outputs straight out of
-      # its S3 state object instead, using this job's already-exported
-      # AWS_* env credentials - no extra profile or write access needed.
+      # inside the DEPENDENCY's own directory using ITS OWN backend profile
+      # (root.hcl's remote_state.profile, written above) - a profile this
+      # job never configured before, so that failed with "Backend
+      # initialization required" / "failed to get shared config profile" on
+      # every fresh matrix-job checkout. This flag instead reads the
+      # dependency's outputs straight out of its S3 state object, using
+      # that same profile.
       # -lock=false: `plan` never needs to lock the state it's reading;
       # skips the native S3 lockfile PutObject/DeleteObject that
       # ReadOnlyAccess (deliberately, see github_oidc.tf) can't perform.
