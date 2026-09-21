@@ -40,9 +40,22 @@ locals {
   # trusting only terraform-management. That single extra assume-role hop is also what lets
   # `--backend-bootstrap` create the bucket itself inside the member account on first apply — no separate
   # bootstrap stack for it either.
-  state_bucket   = try(local.account_vars.locals.state_bucket, "dev-me-terraform-state")
-  state_profile  = try(local.account_vars.locals.state_profile, "terraform")
-  state_role_arn = try(local.account_vars.locals.state_role_arn, null)
+  state_bucket  = try(local.account_vars.locals.state_bucket, "dev-me-terraform-state")
+  state_profile = try(local.account_vars.locals.state_profile, "terraform")
+
+  # .github/workflows/plan.yml's read-only CI role (github-actions-plan,
+  # chained into github-actions-plan-target for a member account) already
+  # sits directly in whichever account it's planning, with ReadOnlyAccess
+  # attached there directly - unlike the human "terraform" static user, it
+  # never needs the extra assume-role hop into that account's terraform-target
+  # (AdministratorAccess, trusting only terraform-management by name) just to
+  # reach its own account's bucket. Skipping the hop for CI, rather than
+  # trusting github-actions-plan-target on terraform-target, keeps that
+  # AdministratorAccess role reachable only by the human chain - the whole
+  # point of it trusting one specific principal instead of a pattern (see
+  # terraform_management.tf). Human applies are unaffected: GITHUB_ACTIONS is
+  # never set outside an Actions runner.
+  state_role_arn = get_env("GITHUB_ACTIONS", "false") == "true" ? null : try(local.account_vars.locals.state_role_arn, null)
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
