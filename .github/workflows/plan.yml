@@ -109,9 +109,11 @@ jobs:
             --role-arn arn:aws:iam::841775659851:role/github-actions-plan-target \
             --role-session-name gha-plan-target-${{ github.run_id }} \
             --query Credentials --output json)
-          echo "AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r .AccessKeyId)" >> "$GITHUB_ENV"
-          echo "AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r .SecretAccessKey)" >> "$GITHUB_ENV"
-          echo "AWS_SESSION_TOKEN=$(echo "$creds" | jq -r .SessionToken)" >> "$GITHUB_ENV"
+          {
+            echo "AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r .AccessKeyId)"
+            echo "AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r .SecretAccessKey)"
+            echo "AWS_SESSION_TOKEN=$(echo "$creds" | jq -r .SessionToken)"
+          } >> "$GITHUB_ENV"
 
       # workloads-dev/account.hcl overrides state_profile to
       # "terraform-management" (its own bucket, reached via that account's
