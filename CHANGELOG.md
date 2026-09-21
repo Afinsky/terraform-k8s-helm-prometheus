@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.9](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.8...v1.2.9) (2026-09-21)
+
+
+### Bug Fixes
+
+* trivy as config + secret+ cluster-autoscaler + checkov + actionlint ([#23](https://github.com/Afinsky/terraform-k8s-helm-prometheus/issues/23)) ([bdb0836](https://github.com/Afinsky/terraform-k8s-helm-prometheus/commit/bdb0836d28af4ad7e25bb62bcbf6a06e82850633))
+
 ## [1.2.8](https://github.com/Afinsky/terraform-k8s-helm-prometheus/compare/v1.2.7...v1.2.8) (2026-09-16)
 
 
