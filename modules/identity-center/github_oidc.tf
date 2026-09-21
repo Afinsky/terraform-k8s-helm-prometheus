@@ -60,3 +60,26 @@ resource "aws_iam_role_policy_attachment" "github_actions_plan" {
   role       = aws_iam_role.github_actions_plan.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
+
+# ReadOnlyAccess alone doesn't include sts:AssumeRole, so plan.yml's "Chain
+# into member-account role" step (assuming github-actions-plan-target to
+# plan workloads-dev's layers) had no identity-policy grant to actually do
+# that - same gap terraform_management.tf's assume-terraform-target policy
+# fixes for the human "terraform" -> terraform-management -> terraform-target
+# chain, mirrored here. Scoped to just this one role name in any member
+# account (account_access_stackset.tf deploys github-actions-plan-target
+# itself, always ReadOnlyAccess) - not a write-capability grant.
+resource "aws_iam_role_policy" "github_actions_plan_assume_target" {
+  name = "assume-github-actions-plan-target"
+  role = aws_iam_role.github_actions_plan.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid      = "AssumeGithubActionsPlanTargetInAnyMemberAccount"
+      Effect   = "Allow"
+      Action   = "sts:AssumeRole"
+      Resource = "arn:aws:iam::*:role/github-actions-plan-target"
+    }]
+  })
+}
