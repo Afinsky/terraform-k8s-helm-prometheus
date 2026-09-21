@@ -30,6 +30,11 @@ trivy          = "0.74.0"
 # pre-commit hook needs `language: golang` (builds from source on every fresh
 # pre-commit env instead of using one pinned, cached binary).
 gitleaks       = "8.24.2"
+# local pre-commit hook `actionlint` — lints .github/workflows/*.yml itself
+# (bad expressions, wrong context refs, shellcheck on `run:` blocks) rather
+# than the security-posture checks checkov's github_actions framework covers -
+# complementary, not overlapping.
+actionlint     = "1.7.12"
 
 # --- GitOps side (../argo-k8s-helm — parked experiment, not in use) -------
 # `helm template` / `helm search repo` sanity checks against that repo's gitops/.

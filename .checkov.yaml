@@ -1,10 +1,12 @@
 framework:
   - terraform
+  - github_actions
 
 directory:
   - modules/identity-center
   - modules/eks-cluster
   - modules/eks-workloads
+  - .github/workflows
 
 download-external-modules: false
 compact: true

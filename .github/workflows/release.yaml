@@ -9,6 +9,12 @@ on:
       - '**/*.tf'
       - '.github/workflows/release.yml'
 
+# No implicit write-all: semantic-release authenticates with its own
+# SEMANTIC_RELEASE_TOKEN secret below (not the default GITHUB_TOKEN this
+# block scopes), so the default token only needs to check the repo out.
+permissions:
+  contents: read
+
 jobs:
   release:
     name: Release

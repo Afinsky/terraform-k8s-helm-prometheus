@@ -78,3 +78,8 @@ repos:
         language: system
         pass_filenames: false
         entry: mise exec -- checkov --config-file .checkov.yaml
+      - id: actionlint
+        name: actionlint
+        language: system
+        files: ^\.github/workflows/.*\.ya?ml$
+        entry: mise exec -- actionlint
