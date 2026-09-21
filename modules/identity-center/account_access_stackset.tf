@@ -73,6 +73,26 @@ resource "aws_cloudformation_stack_set" "terraform_target" {
             }]
           }
           ManagedPolicyArns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"]
+          # Same reasoning as github_actions_plan_state_lock in
+          # github_oidc.tf: root.hcl's S3 backend needs PutObject/DeleteObject
+          # on "<state key>.tflock" for `plan` to acquire/release its lock,
+          # even though ReadOnlyAccess alone can't do that. The target
+          # account's state bucket name isn't known here (it's
+          # "<alias>-<account_id>-terraform-state", and this template is
+          # deployed identically into every account without knowing each
+          # account's alias) - scoped by this account's own AccountId instead,
+          # and only to *.tflock objects, never .tfstate itself.
+          Policies = [{
+            PolicyName = "state-lock"
+            PolicyDocument = {
+              Version = "2012-10-17"
+              Statement = [{
+                Effect   = "Allow"
+                Action   = ["s3:PutObject", "s3:DeleteObject"]
+                Resource = { "Fn::Sub" = "arn:aws:s3:::*-$${AWS::AccountId}-terraform-state/*.tflock" }
+              }]
+            }
+          }]
         }
       }
     }
