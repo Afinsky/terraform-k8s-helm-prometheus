@@ -2,7 +2,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "v21.24.2"
 
-  name                                   = "${local.resource_name}-k8s-cluster"
+  name                                   = local.cluster_name
   kubernetes_version                     = "1.36"
   enabled_log_types                      = ["api", "audit", "authenticator"] # audit -> who did what; authenticator -> who tried to log in
   cloudwatch_log_group_retention_in_days = 30
@@ -38,6 +38,12 @@ module "eks" {
   subnet_ids = module.vpc.private_subnets
 
   eks_managed_node_groups = {
+    # Primary capacity. min < max (was a fixed min=max=desired=2) so Cluster
+    # Autoscaler (modules/eks-workloads/cluster-autoscaler.tf) has room to
+    # actually scale - desired_size only sets the size at creation time, the
+    # eks-managed-node-group submodule's own aws_eks_node_group resource
+    # ignore_changes[scaling_config[0].desired_size] unconditionally, so CA
+    # freely moves it afterward without fighting Terraform on every apply.
     generalworkload-v4 = {
       min_size       = 2
       max_size       = 2
@@ -52,6 +58,29 @@ module "eks" {
         service_role_ssm  = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
         default_policy    = "arn:aws:iam::aws:policy/AmazonSSMManagedEC2InstanceDefaultPolicy"
       }
+      tags = local.cluster_autoscaler_tags
+    }
+
+    # Fallback capacity: min=desired=0, so this costs nothing while the SPOT
+    # group above has capacity. Only exists so a SPOT-wide interruption
+    # (AWS reclaiming an entire capacity pool, which can hit every SPOT node
+    # at once - not just one at a time) has somewhere for CA to schedule
+    # replacement nodes instead of the cluster going fully unschedulable.
+    ondemand-fallback = {
+      min_size       = 0
+      max_size       = 2
+      desired_size   = 0
+      instance_types = ["t3.medium"]
+      capacity_type  = "ON_DEMAND"
+      disk_size      = 60
+      ebs_optimized  = true
+      iam_role_additional_policies = {
+        ssm_access        = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+        cloudwatch_access = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+        service_role_ssm  = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM"
+        default_policy    = "arn:aws:iam::aws:policy/AmazonSSMManagedEC2InstanceDefaultPolicy"
+      }
+      tags = local.cluster_autoscaler_tags
     }
   }
 

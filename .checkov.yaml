@@ -1,0 +1,55 @@
+framework:
+  - terraform
+  - github_actions
+
+directory:
+  - modules/identity-center
+  - modules/eks-cluster
+  - modules/eks-workloads
+  - .github/workflows
+
+download-external-modules: false
+compact: true
+quiet: true
+
+# Inline `# checkov:skip=<ID>:<reason>` comments (checkov's normal,
+# per-resource suppression mechanism, and the strongly preferred one - it
+# keeps the reason next to the code it excuses) do not work in this
+# environment as of checkov 3.3.19: verified against checkov's own
+# documented example in isolation (a single resource, no module, no
+# for_each) and it still fails to suppress. Revisit per-resource comments
+# if a future checkov version fixes this - until then, this global list is
+# the only mechanism that actually works, so every entry below is annotated
+# with exactly which resource(s) it's really scoped to in intent, even
+# though the enforcement itself is repo-wide.
+skip-check:
+  # modules/identity-center/dns.tf's dns_zone_writer and secrets.tf's
+  # secrets_reader roles both use a wildcard IAM principal, which alone
+  # would be too broad, but both are narrowed by a Condition block
+  # (aws:PrincipalOrgID + aws:PrincipalArn StringLike) that this check
+  # doesn't evaluate - see each resource's own comment for the actual
+  # reasoning.
+  - CKV_AWS_60
+
+  # modules/eks-cluster's vpc/eks/acm_backend/acm_backend_dns_validation
+  # module calls: registry sources (terraform-aws-modules/*), not raw git
+  # URLs - a pinned exact `version` is already immutable (the registry
+  # doesn't let a published version move) and checksummed via
+  # .terraform.lock.hcl, the same supply-chain guarantee a commit-hash-
+  # pinned git ref would give. See vpc.tf's comment.
+  - CKV_TF_1
+
+  # modules/identity-center/ecr.tf's aws_ecr_repository and secrets.tf's
+  # aws_secretsmanager_secret: both already get AWS's default AES256/
+  # AWS-managed-key encryption at rest at no extra cost - a customer-managed
+  # KMS key adds ~$1/mo plus rotation upkeep for one repo/one secret in a
+  # personal homelab. Revisit if this account ever needs KMS-level access
+  # auditing or cross-account key sharing.
+  - CKV_AWS_136
+  - CKV_AWS_149
+
+  # modules/identity-center/secrets.tf's aws_secretsmanager_secret
+  # (photoapp_db_credentials): rotation intentionally deferred - tracked in
+  # docs/setup_evaluation.md item #8, pending confirming whether a real RDS
+  # backs these credentials before building a rotation Lambda around it.
+  - CKV2_AWS_57

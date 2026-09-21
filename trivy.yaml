@@ -1,0 +1,16 @@
+severity:
+ - HIGH
+ - CRITICAL
+
+scan:
+  parallel: 50
+  scanners:
+   - vuln
+   - misconfig
+   - secret
+   - license
+
+  skip-dirs:
+    - "**/.terraform"
+    - "**/.terragrunt-cache"
+    - ".git"

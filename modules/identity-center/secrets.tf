@@ -65,3 +65,19 @@ resource "aws_iam_role_policy" "secrets_reader" {
     }]
   })
 }
+
+# Declares the *existence* of every app secret this Organization's
+# workloads expect to find at read time - not their value (see the
+# deliberately-omitted secret_string below). Before this resource, a
+# renamed or deleted secret was invisible to `terraform plan`; the first
+# sign was external-secrets' `CreateContainerConfigError` at pod-start
+# time in the cluster, not a plan diff - this is that gap closed for
+# photoapp's secret specifically (the only ExternalSecret consumer today -
+# see k8s/manifests/app.yaml). Add one entry per new app secret as it's
+# introduced.
+resource "aws_secretsmanager_secret" "photoapp_db_credentials" {
+  name        = "${local.workload_secrets_prefix}/photoapp/db-credentials"
+  description = "photoapp's DB username/password (modules/eks-workloads' ExternalSecret, k8s/manifests/app.yaml). Value is set by hand (aws secretsmanager put-secret-value / console) - deliberately not a `secret_string` argument here, so plaintext credentials never enter this repo's Terraform state or history."
+
+  tags = local.common_tags
+}
