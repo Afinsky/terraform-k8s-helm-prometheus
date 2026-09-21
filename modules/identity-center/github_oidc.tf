@@ -60,24 +60,3 @@ resource "aws_iam_role_policy_attachment" "github_actions_plan" {
   role       = aws_iam_role.github_actions_plan.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
-
-# root.hcl's S3 backend sets use_lockfile = true (native S3 state locking,
-# Terraform >=1.10): even `plan` must PutObject/DeleteObject a
-# "<state key>.tflock" object to acquire/release the lock, which
-# ReadOnlyAccess alone doesn't grant - every plan.yml job fails at "Error
-# acquiring the state lock" without this. Scoped to *.tflock objects only,
-# never the .tfstate files themselves, so this role still can't write or
-# delete actual state content.
-resource "aws_iam_role_policy" "github_actions_plan_state_lock" {
-  name = "state-lock"
-  role = aws_iam_role.github_actions_plan.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["s3:PutObject", "s3:DeleteObject"]
-      Resource = "arn:aws:s3:::dev-me-terraform-state/*.tflock"
-    }]
-  })
-}
