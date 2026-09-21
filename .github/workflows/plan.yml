@@ -152,10 +152,23 @@ jobs:
       # -lock=false: `plan` never needs to lock the state it's reading;
       # skips the native S3 lockfile PutObject/DeleteObject that
       # ReadOnlyAccess (deliberately, see github_oidc.tf) can't perform.
+      #
+      # unset AWS_*: the AWS SDK prefers ambient env credentials over any
+      # named profile, for both --dependency-fetch-output-from-state's S3
+      # client and (we suspect) the aws provider's own profile resolution -
+      # for a chained (workloads-dev) job those ambient creds are
+      # github-actions-plan-target, wrong for reads that need the base
+      # github-actions-plan identity (e.g. identity_center's state, in
+      # abotyan001). provider.tf's own comment already says the intent was
+      # always named-profile resolution ("not bare env-var credentials") -
+      # every profile this job needs was written above, so ambient env
+      # was only ever a vehicle for `aws configure set`, never meant to
+      # reach terraform/terragrunt itself.
       - name: terragrunt plan
         id: plan
         run: |
           set -o pipefail
+          unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN
           terragrunt plan \
             --working-dir ${{ matrix.layer }} \
             --non-interactive \
