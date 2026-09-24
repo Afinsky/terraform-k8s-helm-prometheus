@@ -55,7 +55,7 @@ metadata:
   name: photoapp
 spec:
   ports:
-  - port: 80 #service port  #kubeproxy will open port on worker node to which can route traffic to alb
+  - port: 80 #service port
     targetPort: 8080 #container port
     protocol: TCP
   type: ClusterIP

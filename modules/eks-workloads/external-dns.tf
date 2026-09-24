@@ -1,10 +1,12 @@
 # external-dns
 #
 # Watches Ingress objects (source=ingress, see external-dns.yaml) and syncs
-# their `host:` rules into Route53 as real DNS records - see
-# DNS_MANAGEMENT_TODO.md for why this is needed (nothing else in this repo
-# creates records for hosts declared in app.yaml's Ingress) and why this
-# option (vs. a manual aws_route53_record or a wildcard record) was picked.
+# their `host:` rules into Route53 as real DNS records - nothing else in
+# this repo creates records for hosts declared in app.yaml's Ingress. Picked
+# over a manual aws_route53_record (doesn't scale past 1-2 static hosts
+# without a Terraform change per new Ingress host) or a wildcard record
+# (doesn't generalize past *.abotyan.click and gives up per-host DNS as a
+# source of truth).
 #
 # Same IRSA pattern as load-balancer-controller.tf: dedicated role trusting only this controller's
 # ServiceAccount. Its own permissions are just an assume-role, though - the

@@ -84,7 +84,7 @@ three groups, and the permission sets/account assignments that turn into SSO rol
   `abotyan001-root.devops-admin`, `workloads-dev.devops-admin` — see `make aws-sso-configure-populate`,
   which generates these in `~/.aws/config` via `aws-sso-util`) that `eks-cluster`/`eks-workloads`
   apply as.
-- **`developer`** — minimal IAM (just enough to find the cluster), assigned to `developers`, on
+- **`developer`** — `ReadOnlyAccess` plus EKS discovery, assigned to `developers`, on
   `workloads-dev` and the management account. Real Kubernetes access comes later, from EKS access
   entries + RBAC defined in `eks-cluster`/`eks-workloads` — not from IAM.
 

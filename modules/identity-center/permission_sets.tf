@@ -49,7 +49,7 @@ locals {
     devops-admin = {
       description      = "DevOps admin on every account in the org."
       group            = "devops-admins"
-      session_duration = "PT1H" # short: comes in handy in Phase 7
+      session_duration = "PT1H" # shorter than platform-admin's PT4H - this permission set is admin on every account in the org, not just one
       account_patterns = [".*"]
       managed_policies = ["arn:aws:iam::aws:policy/AdministratorAccess"]
     }

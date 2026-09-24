@@ -41,7 +41,7 @@ actionlint     = "1.7.12"
 # (Terraform's helm provider pulls charts on its own here, but the CLI is used
 # for local rendering and version lookups.)
 helm      = "4.2"
-# `aws eks update-kubeconfig` (make update-context), kubectl port-forward,
+# `aws eks update-kubeconfig` (mise run context), kubectl port-forward,
 # general cluster debugging.
 kubectl   = "1.34"
 # `kustomize build` sanity checks for ../argo-k8s-helm's gitops/apps/* overlays.
@@ -86,7 +86,7 @@ run = "pre-commit run --all-files"
 
 [tasks.context]
 description = "Point kubeconfig at the eks-cluster layer's cluster"
-run = "aws eks update-kubeconfig --name dev-me-k8s-cluster --region us-east-1 --profile terraform"
+run = "aws eks update-kubeconfig --name dev-me-k8s-cluster --region us-east-1 --profile workloads-dev.devops-admin"
 
 [tasks.docs]
 description = "Regenerate modules/eks-cluster/README.md"
