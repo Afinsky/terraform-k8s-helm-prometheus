@@ -44,7 +44,7 @@ dependency "eks_cluster" {
 # Same shape as ../eks-cluster/terragrunt.hcl's identity_center dependency -
 # see its comments for why it's absolute and why cross-account works.
 dependency "identity_center" {
-  config_path = "${get_repo_root()}/accounts/abotyan001/us-east-1/01-identity-center"
+  config_path = "${get_repo_root()}/accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center"
 
   mock_outputs = {
     dns_zone_writer_role_arn = "arn:aws:iam::000000000000:role/mock-dns-zone-writer"

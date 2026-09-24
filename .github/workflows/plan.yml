@@ -8,10 +8,10 @@ name: Plan
 # github-actions-plan, ReadOnlyAccess only - this workflow has no
 # credential path to anything that writes).
 #
-# One job per unit, matching the account_access_stackset.tf chain used
-# elsewhere in this repo: abotyan001's 01-identity-center assumes
-# github-actions-plan directly; a workload account's units (generated from
-# its terragrunt.stack.hcl) chain through it into github-actions-plan-target
+# One job per unit (each generated from its account's terragrunt.stack.hcl),
+# matching the account_access_stackset.tf chain used elsewhere in this repo:
+# abotyan001's identity-center assumes github-actions-plan directly; a
+# workload account's units chain through it into github-actions-plan-target
 # (auto-deployed into every member account by that same StackSet).
 #
 # Requires (not yet done as of writing this workflow - apply
@@ -39,8 +39,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: 01-identity-center
-            layer: accounts/abotyan001/us-east-1/01-identity-center
+          - name: identity-center
+            layer: accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center
             profile: terraform
             chain: false
           - name: workloads-dev/eks-cluster
@@ -70,15 +70,13 @@ jobs:
       - name: Run make setup
         run: make setup
 
-      # A workload account's units exist only as generated, gitignored
-      # .terragrunt-stack/ dirs - and unlike `run --all`, a single-unit
-      # `terragrunt plan` doesn't generate them itself. Pure file generation,
-      # no AWS credentials needed.
+      # Every unit exists only as a generated, gitignored .terragrunt-stack/
+      # dir - and unlike `run --all`, a single-unit `terragrunt plan` doesn't
+      # generate it itself. Every account's stack, not just this job's: the
+      # eks-* units depend on abotyan001's generated identity-center. Pure
+      # file generation, no AWS credentials needed.
       - name: Generate Terragrunt stacks
-        run: |
-          for stack in accounts/*/*/terragrunt.stack.hcl; do
-            terragrunt stack generate --working-dir "$(dirname "$stack")" --non-interactive
-          done
+        run: make stacks
 
       # Assumes github-actions-plan directly. For workloads-dev layers this
       # is only the FIRST hop - see "Chain into member-account role" below.
@@ -94,10 +92,10 @@ jobs:
       # profile) - it's what the S3 backend itself, and
       # --dependency-fetch-output-from-state below, use to read a layer's
       # state. For abotyan001 it's always "terraform" (the default, never
-      # overridden there) regardless of which of its 3 layers you're in -
-      # and every eks-cluster/eks-workloads layer in ANY account declares a
+      # overridden there) - and every eks-cluster/eks-workloads unit in ANY
+      # account declares a
       # `dependency "identity_center"` pointing at abotyan001's
-      # 01-identity-center, so this profile is needed everywhere, not just
+      # identity-center, so this profile is needed everywhere, not just
       # in abotyan001's own jobs. Written here, from the base
       # github-actions-plan session (ReadOnlyAccess in abotyan001), before
       # the workloads-dev chaining below overwrites the ambient AWS_* env
@@ -142,7 +140,7 @@ jobs:
           aws configure set region us-east-1 --profile terraform-management
 
       # provider.tf in every module reads a *named* profile
-      # (`profile = var.profile`, set by 01-identity-center's terragrunt.hcl
+      # (`profile = var.profile`, set by units/identity-center's template
       # or by a workload account's terragrunt.stack.hcl values), not bare
       # env-var credentials - write the session's credentials into the exact
       # profile name each unit expects instead of touching any config.

@@ -4,10 +4,10 @@
 
 SHELL := $(shell which bash) # set default shell
 
-# ACCOUNT selects which accounts/<alias>/us-east-1 tree a layer target resolves against.
-# 01-identity-center is a plain unit directory there; eks-cluster/eks-workloads are generated from
-# that account's terragrunt.stack.hcl (templates in units/), so they need a workload account's alias.
-# eg make 01-identity-center apply                -> accounts/abotyan001/us-east-1/01-identity-center
+# ACCOUNT selects which accounts/<alias>/us-east-1 tree a layer target resolves against. Every layer
+# is a unit generated from that account's terragrunt.stack.hcl (templates in units/): identity-center
+# only in abotyan001 (the default), eks-cluster/eks-workloads only in workload accounts.
+# eg make identity-center apply                -> accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center
 # eg make ACCOUNT=workloads-dev eks-cluster apply -> accounts/workloads-dev/us-east-1/.terragrunt-stack/eks-cluster
 ACCOUNT ?= abotyan001
 ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
@@ -31,8 +31,7 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 	@for dir in accounts/*/; do \
 		alias=$$(basename "$$dir"); \
 		id=$$(grep -oE 'aws_account_id[[:space:]]*=[[:space:]]*"[^"]*"' "$$dir/account.hcl" 2>/dev/null | grep -oE '"[^"]*"' | tr -d '"'); \
-		layers=$$( { find "$$dir" -mindepth 3 -maxdepth 3 -name terragrunt.hcl | sed "s#$$dir##;s#$(REGION)/##;s#/terragrunt.hcl##"; \
-			sed -nE 's/^unit "([^"]+)".*/\1/p' "$${dir}$(REGION)/terragrunt.stack.hcl" 2>/dev/null; } | sort | tr '\n' ' '); \
+		layers=$$(sed -nE 's/^unit "([^"]+)".*/\1/p' "$${dir}$(REGION)/terragrunt.stack.hcl" 2>/dev/null | sort | tr '\n' ' '); \
 		printf "\033[36m  %-20s\033[0m %-20s %s\n" "$$alias" "$${id:-?}" "$$layers"; \
 	done
 
@@ -52,7 +51,7 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 #                                  eks-workloads' load balancers to actually clear first
 # ACCOUNT=<alias>               - target a member account instead of abotyan001 (default)
 #
-# eg make 01-identity-center apply
+# eg make identity-center apply
 # eg make ACCOUNT=workloads-dev eks-cluster plan
 # eg make ACCOUNT=workloads-dev eks-workloads apply
 # eg make ACCOUNT=workloads-dev destroy-safe
@@ -86,16 +85,31 @@ logout: ## aws-sso-util logout
 # create it itself (versioned, encrypted, public access blocked) the first time it's missing.
 # See root.hcl's remote_state block.
 # ----------------------------------------------------------------
-.PHONY: 01-identity-center eks-cluster eks-workloads
+.PHONY: stacks identity-center eks-cluster eks-workloads
 
-# $(call stack-unit,<unit>) - point LAYER at <unit> generated from $(ACCOUNT_DIR)/terragrunt.stack.hcl,
-# regenerating first so edits to the stack file or units/ always reach the unit being run. Cheap:
-# generate leaves each unit's .terragrunt-cache alone, so nothing is re-downloaded.
+# Every account's stack, not just $(ACCOUNT)'s: each workload account's eks-* units depend on
+# abotyan001's generated .terragrunt-stack/identity-center. Regenerating before every run keeps
+# edits to stack files or units/ from going stale, and costs nothing: generate leaves each unit's
+# .terragrunt-cache alone, so nothing is re-downloaded.
+# Generate never removes a unit the stack file no longer declares (renamed or dropped), and
+# `run --all` would still run that leftover - against the same state key as its renamed twin -
+# so prune any generated dir whose name isn't one of the stack file's unit `path`s.
+stacks: ## generate every account's terragrunt.stack.hcl into its .terragrunt-stack/ (runs automatically)
+	@for stack in accounts/*/*/terragrunt.stack.hcl; do \
+		dir=$$(dirname "$$stack"); \
+		terragrunt stack generate --working-dir "$$dir" --non-interactive --log-level warn || exit 1; \
+		declared=$$(sed -nE 's/^  path[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$$stack"); \
+		for unit in "$$dir"/.terragrunt-stack/*/; do \
+			[ -d "$$unit" ] || continue; \
+			printf '%s\n' "$$declared" | grep -qxF "$$(basename "$$unit")" || { echo "removing stale $$unit (not declared in $$stack)"; rm -rf "$$unit"; }; \
+		done; \
+	done
+
+# $(call stack-unit,<unit>) - point LAYER at <unit> generated from $(ACCOUNT_DIR)/terragrunt.stack.hcl
 define stack-unit
 $(eval LAYER = $(ACCOUNT_DIR)/.terragrunt-stack/$(1))
 $(eval STACK_UNIT_DIR = $(ACCOUNT_DIR)/.terragrunt-stack/$(1))
-@test -f $(ACCOUNT_DIR)/terragrunt.stack.hcl || { echo "$(ACCOUNT_DIR) has no terragrunt.stack.hcl - pass ACCOUNT=<workload account alias>, see make accounts"; exit 1; }
-terragrunt stack generate --working-dir ./$(ACCOUNT_DIR) --non-interactive
+@test -d $(LAYER) || { echo "$(ACCOUNT_DIR)/terragrunt.stack.hcl declares no $(1) unit - pass the ACCOUNT=<alias> that has it, see make accounts"; exit 1; }
 endef
 
 # $(call sync-locks,<generated unit dirs>) - Terragrunt writes a unit's lock file back into its working
@@ -109,13 +123,13 @@ define sync-locks
 done
 endef
 
-01-identity-center: ## AWS Organization, IAM Identity Center users/groups/permission sets
-	$(eval LAYER = $(ACCOUNT_DIR)/01-identity-center)
+identity-center: stacks ## AWS Organization, IAM Identity Center users/groups/permission sets - management account (default ACCOUNT)
+	$(call stack-unit,identity-center)
 
-eks-cluster: ## VPC, EKS control plane/node groups, ACM (pure AWS, no k8s resources) - needs ACCOUNT=<workload account>
+eks-cluster: stacks ## VPC, EKS control plane/node groups, ACM (pure AWS, no k8s resources) - needs ACCOUNT=<workload account>
 	$(call stack-unit,eks-cluster)
 
-eks-workloads: ## ingress-nginx, external-dns/-secrets, lb-controller, sample apps - depends on eks-cluster, needs ACCOUNT=<workload account>
+eks-workloads: stacks ## ingress-nginx, external-dns/-secrets, lb-controller, sample apps - depends on eks-cluster, needs ACCOUNT=<workload account>
 	$(call stack-unit,eks-workloads)
 
 # ----------------------------------------------------------------
@@ -179,15 +193,16 @@ bootstrap-crds: ## make eks-workloads bootstrap-crds ACCOUNT=<alias> - first-app
 		-target=helm_release.external_secrets
 	$(call sync-locks,$(STACK_UNIT_DIR))
 
-# `run --all` regenerates $(ACCOUNT_DIR)/terragrunt.stack.hcl itself before running
-run-all-plan: ## plan every layer under $(ACCOUNT_DIR)
+# `run --all` regenerates $(ACCOUNT_DIR)'s own stack itself, but not abotyan001's, which the eks-*
+# units depend on from outside $(ACCOUNT_DIR) - hence the stacks prerequisite
+run-all-plan: stacks ## plan every layer under $(ACCOUNT_DIR)
 	terragrunt run --all plan \
 		--working-dir ./$(ACCOUNT_DIR) \
 		--non-interactive \
 		--backend-bootstrap
 	$(call sync-locks,$(ACCOUNT_DIR)/.terragrunt-stack/*)
 
-run-all-apply: ## apply every layer under $(ACCOUNT_DIR)
+run-all-apply: stacks ## apply every layer under $(ACCOUNT_DIR)
 	terragrunt run --all apply \
 		--working-dir ./$(ACCOUNT_DIR) \
 		--non-interactive \

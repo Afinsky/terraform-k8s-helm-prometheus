@@ -12,7 +12,7 @@ No Terraform of its own. All resources live in
 [`modules/eks-cluster`](../../modules/eks-cluster) (see its README for
 inputs/outputs); `terragrunt.hcl` here only wires that module up via
 `terraform { source = ... }` and maps `values.*` and
-`01-identity-center`'s outputs onto its inputs — backend/version
+`identity-center`'s outputs onto its inputs — backend/version
 constraints/common tags still come from [`root.hcl`](../../root.hcl).
 
 `.terraform.lock.hcl` here is the one lock file every account's generated

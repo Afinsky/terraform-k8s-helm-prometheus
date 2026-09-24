@@ -17,7 +17,7 @@ locals {
 
   # dns_zone_writer_role_arn/dns_zone_id/dns_zone_name/secrets_reader_role_arn
   # used to live here as hardcoded literals ("update by hand if
-  # 01-identity-center is ever re-applied with a different zone/role") -
+  # identity-center is ever re-applied with a different zone/role") -
   # every eks-cluster/eks-workloads terragrunt.hcl now reads them live via a
   # `dependency "identity_center"` block instead (see any of those files'
   # comment for why), so they're not needed globally anymore.

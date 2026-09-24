@@ -49,7 +49,7 @@ kustomize = "5.7"
 
 # --- Shared -------------------------------------------------------------------
 # AWS auth for every terraform command (every provider.tf reads ~/.aws/*, profile
-# set per-layer - "terraform" for 01-identity-center, "<account-name>.devops-admin"
+# set per-layer - "terraform" for identity-center, "<account-name>.devops-admin"
 # for eks-cluster/eks-workloads) and for `aws eks update-kubeconfig`.
 awscli     = "2"
 # `make aws-sso-configure-populate` (aws-sso-util configure populate) —

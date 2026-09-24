@@ -15,15 +15,16 @@ right now (see [GitOps status](#gitops-status-parked) below).
 ```
 AWS Organization, region: us-east-1
 │
+│  every layer is a unit generated from its account's terragrunt.stack.hcl
+│  (templates in units/)
+│
 ├─ abotyan001 (management account, 417886991962)
-│  └─ 01-identity-center   AWS Organization + IAM Identity Center (SSO)
+│  └─ identity-center      AWS Organization + IAM Identity Center (SSO)
 │                           groups/users/permission sets. Applies as the
 │                           static "terraform" IAM user. No workload infra
 │                           runs in the management account.
 │
-└─ workloads-dev (member account, vended by 01-identity-center)
-   │                        both units generated from this account's
-   │                        terragrunt.stack.hcl (templates in units/)
+└─ workloads-dev (member account, vended by identity-center)
    ├─ eks-cluster          VPC, EKS control plane/node groups, ACM - pure AWS,
    │                        no Kubernetes/Helm provider. Applies as
    │                        "workloads-dev.devops-admin".
@@ -34,7 +35,7 @@ AWS Organization, region: us-east-1
                             *before* eks-cluster (see "Destroy order" below).
 ```
 
-Layers are applied in order: `01-identity-center` first creates the SSO permission sets
+Layers are applied in order: `identity-center` first creates the SSO permission sets
 everything else runs as, then `eks-cluster`, then `eks-workloads` (which reads `eks-cluster`'s
 outputs via a Terragrunt `dependency` block - see [`modules/eks-cluster`'s README](modules/eks-cluster/README.md)
 for why they're two layers instead of one).
@@ -55,23 +56,23 @@ for why they're two layers instead of one).
   hand-written, committed file (in each module — see below).
 - Every layer is a thin wrapper: each `terragrunt.hcl` has no Terraform of its own, just a
   `terraform { source = "${get_repo_root()}/modules/<name>" }` block plus `inputs`.
-  `modules/identity-center` was split out purely for the layer/module consistency, not because
-  anything else points at it — it defines the Organization itself, so it's inherently
-  single-instance, and its `01-identity-center` unit is a plain directory.
-- `modules/eks-cluster` and `modules/eks-workloads` are reused across accounts through
-  [Terragrunt stacks](https://terragrunt.gruntwork.io/docs/features/stacks): their
-  `terragrunt.hcl` exists once, as a template under [`units/`](units), and every workload
-  account instantiates both from a single `accounts/<alias>/us-east-1/terragrunt.stack.hcl`
+- Every layer is a [Terragrunt stack](https://terragrunt.gruntwork.io/docs/features/stacks)
+  unit: its `terragrunt.hcl` exists once, as a template under [`units/`](units), and each
+  account instantiates its layers from a single `accounts/<alias>/us-east-1/terragrunt.stack.hcl`
   holding only what differs per account (SSO profile, environment, VPC ranges).
   `terragrunt stack generate` expands it into a gitignored `.terragrunt-stack/` next to it;
-  every `make` target and `terragrunt run --all` regenerates it before running.
+  every `make` target regenerates every account's stack before running (`make stacks`).
+  `modules/eks-cluster` and `modules/eks-workloads` are reused across workload accounts this
+  way; `modules/identity-center` defines the Organization itself, so its `identity-center`
+  unit is instantiated exactly once, by the management account — a stack unit purely so every
+  layer is shaped the same way.
 - `eks-cluster` and `eks-workloads` are split into two layers (not one) specifically so
   `terraform destroy` is safe: destroying `eks-workloads` first, while the cluster and its
   controllers are still up, lets the AWS Load Balancer Controller actually deprovision any
   ALB/NLB it created before `eks-cluster`'s VPC/subnets get destroyed. One state for both risked
   an orphaned LB (and its ENIs) blocking subnet deletion. See `make destroy-safe` below.
 
-### `01-identity-center`
+### `identity-center`
 
 Creates the AWS Organization and IAM Identity Center: three users (`aliaksei`, `alice`, `bob`),
 three groups, and the permission sets/account assignments that turn into SSO roles:
@@ -107,7 +108,7 @@ Pure AWS - no Kubernetes/Helm provider anywhere in this module:
 - **ACM** + **Route53** — one wildcard cert, DNS validation (cross-account - see
   [`modules/identity-center`'s `dns.tf`](modules/identity-center/dns.tf)).
 
-Applies as `<account-name>.devops-admin` — a consumer of the identity `01-identity-center`
+Applies as `<account-name>.devops-admin` — a consumer of the identity `identity-center`
 defines, with no self-reference risk.
 
 ### `eks-workloads`
@@ -161,19 +162,21 @@ modules/
     unused/                       # archived alternative node-group configs (not compiled)
   eks-workloads/                  # all of layer 3's Terraform — see above
 units/                            # Terragrunt unit templates, instantiated per account by a stack file
-  eks-cluster/                    # layer 2 — terragrunt.hcl + state.hcl + the shared lock file
+  identity-center/                # layer 1 — terragrunt.hcl + state.hcl + lock file, wires up modules/identity-center
+  eks-cluster/                    # layer 2 — same, wires up modules/eks-cluster
   eks-workloads/                  # layer 3 — same, depends on the eks-cluster unit generated next to it
 accounts/
   abotyan001/                     # the management account
     account.hcl                   # aws_account_alias, aws_account_id
     us-east-1/
       region.hcl                  # aws_region
-      01-identity-center/         # layer 1 — terragrunt.hcl + state.hcl only, wires up modules/identity-center
+      terragrunt.stack.hcl        # layer 1 only: units/identity-center plus its values
+      .terragrunt-stack/          # generated from terragrunt.stack.hcl, gitignored
   workloads-dev/                  # a member account vended by modules/identity-center/accounts.tf
     account.hcl                   # + its own state bucket/profile/role
     us-east-1/
       region.hcl
-      terragrunt.stack.hcl        # layers 2+3 for this account: units/* plus this account's values
+      terragrunt.stack.hcl        # layers 2+3 for this account: units/eks-* plus this account's values
       .terragrunt-stack/          # generated from terragrunt.stack.hcl, gitignored
 k8s/
   manifests/                      # raw upstream YAML, decoded+applied via kubernetes_manifest
@@ -209,7 +212,7 @@ make setup                       # mise install
 make login                       # aws-sso-util login (opens a browser SSO login)
 make aws-sso-configure-populate      # generate ~/.aws/config profiles for every account/permission set
 
-make 01-identity-center plan     # management account (ACCOUNT defaults to abotyan001)
+make identity-center plan     # management account (ACCOUNT defaults to abotyan001)
 make ACCOUNT=workloads-dev eks-cluster plan    # eks-* need a workload account (see make accounts)
 make ACCOUNT=workloads-dev eks-workloads apply # apply eks-cluster before eks-workloads
 make ACCOUNT=workloads-dev run-all-plan        # plan every layer of one account
@@ -220,7 +223,7 @@ make lint                        # pre-commit run --all-files
 
 ### Adding a workload account
 
-1. Vend it from `modules/identity-center/accounts.tf` (`make 01-identity-center apply`), then
+1. Vend it from `modules/identity-center/accounts.tf` (`make identity-center apply`), then
    `make aws-sso-configure-populate` for its `<name>.devops-admin` SSO profile.
 2. Copy `accounts/workloads-dev/` to `accounts/<alias>/` and edit:
    - `account.hcl` — alias, account ID, and **its own** `state_bucket`/`state_profile`/
@@ -241,9 +244,9 @@ See [`CLAUDE.md`](CLAUDE.md) for the full command reference (`cmd`, `state-list`
 Two AWS identities, used deliberately for different things:
 
 - **`terraform`** — a static IAM user with `AdministratorAccess`. Used only by
-  `01-identity-center`, because that stack *defines* the `devops-admin` role — running it under
+  `identity-center`, because that stack *defines* the `devops-admin` role — running it under
   `devops-admin`'s own STS token would mean that role editing its own definition through itself.
-- **`devops-admin`** — the SSO permission set `01-identity-center` creates (profile named
+- **`devops-admin`** — the SSO permission set `identity-center` creates (profile named
   `<account-name>.devops-admin` per account, generated into `~/.aws/config` by
   `make aws-sso-configure-populate` — see `~/.aws/config`). Used by every stack that
   *consumes* that identity instead of defining it (`eks-cluster` and `eks-workloads`).

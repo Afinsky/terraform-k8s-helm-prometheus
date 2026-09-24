@@ -22,16 +22,18 @@ terraform {
 }
 
 # dns_zone_writer_role_arn/dns_zone_id/dns_zone_name come from
-# 01-identity-center's own state, in the abotyan001 account - not the one
+# identity-center's own state, in the abotyan001 account - not the one
 # this unit applies into. Cross-account is not an issue: `dependency` runs
-# `terragrunt output` in 01-identity-center's own directory, under its own
+# `terragrunt output` in identity-center's own directory, under its own
 # configured profile ("terraform"), not this account's credentials.
 dependency "identity_center" {
-  # Absolute, not relative: 01-identity-center exists exactly once, in
+  # Absolute, not relative: identity-center exists exactly once, in
   # abotyan001, whichever account's .terragrunt-stack/ this is generated into.
-  config_path = "${get_repo_root()}/accounts/abotyan001/us-east-1/01-identity-center"
+  # It's itself a generated unit, so abotyan001's stack must be generated too
+  # (the Makefile and CI generate every account's stack, not just this one).
+  config_path = "${get_repo_root()}/accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center"
 
-  # Lets `plan`/`validate` work before 01-identity-center has ever been
+  # Lets `plan`/`validate` work before identity-center has ever been
   # applied - `apply` still requires real outputs, since only
   # "validate"/"plan"/"init" are in mock_outputs_allowed_terraform_commands.
   mock_outputs = {
