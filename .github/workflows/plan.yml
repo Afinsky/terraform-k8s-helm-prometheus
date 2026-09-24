@@ -1,10 +1,10 @@
 name: Plan
 
 # Runs `terragrunt plan` against every layer on every PR - the gap
-# docs/setup_evaluation.md flagged as item #1. pr-checks.yml deliberately
-# stayed credential-free (see its own comment); this workflow is the
-# "separate, explicit decision" that comment pointed at: it assumes an
-# AWS role via OIDC (modules/identity-center/github_oidc.tf's
+# docs/setup_evaluation.md flagged as item #1. pr-checks.yml stays
+# credential-free by design (only local read-only linters, no AWS calls);
+# this workflow is the separate, explicit decision to add real AWS access
+# for planning: it assumes an AWS role via OIDC (modules/identity-center/github_oidc.tf's
 # github-actions-plan, ReadOnlyAccess only - this workflow has no
 # credential path to anything that writes).
 #

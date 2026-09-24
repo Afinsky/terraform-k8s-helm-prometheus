@@ -1,3 +1,5 @@
+# Run by prek (pinned in mise.toml; `make lint`, `make setup` for the Git hooks),
+# a drop-in for pre-commit - keep this file plain pre-commit-compatible YAML.
 default_install_hook_types: [pre-commit, commit-msg]
 repos:
   - repo: https://github.com/compilerla/conventional-pre-commit

@@ -200,7 +200,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 | `terragrunt` | layering, shared backend config, DRY inputs |
 | `tflint` | `terraform_unused_declarations` and a handful of other rules, in pre-commit |
 | `terraform-docs` | regenerates each module's `README.md` inputs/outputs tables (`identity-center`, `eks-cluster`, `eks-workloads`) |
-| `pre-commit` | runs all of the above + `conventional-pre-commit` on every commit |
+| `prek` | runs `.pre-commit-config.yaml` (all of the above + `conventional-pre-commit`) on every commit — a faster drop-in for `pre-commit` |
 | `awscli` | `aws sts`/`aws eks update-kubeconfig`, general AWS CLI use |
 | `aws-sso-util` | SSO login (`make login`) and generating `~/.aws/config` profiles (`make aws-sso-configure-populate`) |
 | `helm` / `kubectl` / `kustomize` | ad-hoc cluster debugging and rendering — also used against the parked `../argo-k8s-helm` repo |
@@ -208,7 +208,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 ## Getting started
 
 ```bash
-make setup                       # mise install
+make setup                       # mise install + prek install (Git hooks)
 make login                       # aws-sso-util login (opens a browser SSO login)
 make aws-sso-configure-populate      # generate ~/.aws/config profiles for every account/permission set
 
@@ -218,7 +218,7 @@ make ACCOUNT=workloads-dev eks-workloads apply # apply eks-cluster before eks-wo
 make ACCOUNT=workloads-dev run-all-plan        # plan every layer of one account
 make ACCOUNT=workloads-dev run-all-apply       # dependency-ordered: eks-cluster before eks-workloads
 make destroy-safe                # destroy eks-workloads, wait for its LBs to clear, then eks-cluster
-make lint                        # pre-commit run --all-files
+make lint                        # prek run --all-files
 ```
 
 ### Adding a workload account

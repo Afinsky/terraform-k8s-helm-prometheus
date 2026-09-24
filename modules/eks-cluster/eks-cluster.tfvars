@@ -5,7 +5,7 @@ aws_account_id = "417886991962" # tflint fixture only — Terragrunt sets this f
 repo_root      = "../.."        # tflint fixture only — Terragrunt sets this to get_repo_root() for real runs.
 # 2 levels: this module now lives at modules/eks-cluster/ (was accounts/abotyan001/us-east-1/develop/,
 # 4 levels deep, hence the old "../../../..").
-# PLAT-101 Phase 3: EKS public API endpoint is restricted to this IP.
+# EKS public API endpoint is restricted to this IP.
 # Refresh it before applying if it's stale: curl -s https://checkip.amazonaws.com
 my_ip_cidr = "83.175.181.227/32"
 

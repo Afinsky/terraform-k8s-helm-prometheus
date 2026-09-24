@@ -27,7 +27,9 @@ Search the repo, excluding `.terraform/`, `.terragrunt-cache/`,
 - **EKS Kubernetes version** - in `modules/eks-cluster/eks.tf`. The
   cluster-autoscaler minor version must match the Kubernetes minor.
 - **CLI tools** - `mise.toml` (+ `mise.lock`).
-- **pre-commit hooks** - `rev:` in `.pre-commit-config.yaml`.
+- **pre-commit hooks** - `rev:` in `.pre-commit-config.yaml` (run by prek, pinned
+  in `mise.toml`). `mise exec -- prek update --dry-run` lists available revs
+  without touching the file - never run it without `--dry-run`.
   `pre-commit-terraform` is pinned to v1.88.0 on purpose: report it as
   "pinned, see comment" and never recommend bumping it.
 - **GitHub Actions** - `uses:` in `.github/workflows/*.yml`.
