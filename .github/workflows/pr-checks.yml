@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  pre-commit:
-    name: pre-commit (fmt, validate, tflint, docs, gitleaks, trivy)
+  lint:
+    name: Lint (fmt, validate, tflint, docs, gitleaks, trivy)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

@@ -70,7 +70,7 @@ setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml, then the 
 #----------------------------------------------------------
 .PHONY: lint
 lint: ## run all pre-commit hooks across the repo (via prek)
-	mise exec -- prek run --all-files
+	mise exec -- prek run --all-files --show-diff-on-failure
 
 # ----------------------------------------------------------------
 # login
@@ -240,3 +240,6 @@ clean: ## remove .terragrunt-cache, .terraform and generated .terragrunt-stack d
 
 force-provider-update: ## delete all .terraform.lock.hcl files (forces provider refresh)
 	find . -name '.terraform.lock.hcl' | xargs rm -f
+
+list: ## list mise-installed tools and their versions
+	mise ls --current
