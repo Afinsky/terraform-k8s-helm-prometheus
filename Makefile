@@ -18,6 +18,15 @@ LOCK_ID :=
 PORTAL_URL := https://abatsian.awsapps.com/start
 SSO_REGION := us-east-1
 
+# mise itself is the one tool mise.toml can't pin, so `make setup` installs it when it's missing (a fresh
+# container, a new laptop) with the official installer - it verifies the release's sha256 - into
+# ~/.local/bin. That dir and mise's shims are appended to PATH for every recipe, so a shell where mise
+# isn't activated still finds mise and the tools it installed (terragrunt, terraform, ...); anything
+# earlier on PATH - an activated mise, Homebrew - still wins.
+MISE_VERSION ?= v2026.9.12
+MISE_DATA_DIR ?= $(HOME)/.local/share/mise
+export PATH := $(PATH):$(HOME)/.local/bin:$(MISE_DATA_DIR)/shims
+
 .DEFAULT: help # Running Make will run the help target
 
 .PHONY: help
@@ -61,7 +70,11 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # prek install bakes the absolute path of the prek binary (a versioned mise install dir) into
 # .git/hooks/{pre-commit,commit-msg}, falling back to `prek` on PATH - so re-run it after every
 # prek bump in mise.toml, or commits break once the old version is pruned.
-setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml, then the prek Git hooks
+setup: ## install mise if missing, then terraform/terragrunt/tflint/etc pinned in mise.toml, then the prek Git hooks
+	@command -v mise >/dev/null 2>&1 || { \
+		echo "mise not found - installing $(MISE_VERSION) into ~/.local/bin via https://mise.run"; \
+		set -o pipefail; curl -fsSL https://mise.run | MISE_VERSION=$(MISE_VERSION) sh; \
+	}
 	mise install
 	mise exec -- prek install --force
 

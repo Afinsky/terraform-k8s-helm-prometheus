@@ -192,7 +192,7 @@ CLAUDE.md                         # guidance for AI coding agents working in thi
 
 ## Tooling
 
-Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise install`) once.
+Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` once. It installs mise itself first if it's missing (official `mise.run` installer into `~/.local/bin`, only `curl` needed — enough for a bare container), then `mise install`.
 
 | Tool | Used for |
 | --- | --- |
@@ -208,7 +208,7 @@ Versions are pinned in [`mise.toml`](mise.toml) — run `make setup` (`mise inst
 ## Getting started
 
 ```bash
-make setup                       # mise install + prek install (Git hooks)
+make setup                       # install mise if missing, then mise install + prek install (Git hooks)
 make login                       # aws-sso-util login (opens a browser SSO login)
 make aws-sso-configure-populate      # generate ~/.aws/config profiles for every account/permission set
 
