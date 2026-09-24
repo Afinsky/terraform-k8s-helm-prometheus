@@ -58,15 +58,19 @@ accounts: ## list ACCOUNT=<alias> values this repo knows, their AWS account ID, 
 # eg make ACCOUNT=workloads-dev eks-workloads bootstrap-crds
 # ----------------------------------------------------------------
 
-setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml
+# prek install bakes the absolute path of the prek binary (a versioned mise install dir) into
+# .git/hooks/{pre-commit,commit-msg}, falling back to `prek` on PATH - so re-run it after every
+# prek bump in mise.toml, or commits break once the old version is pruned.
+setup: ## install terraform/terragrunt/tflint/etc pinned in mise.toml, then the prek Git hooks
 	mise install
+	mise exec -- prek install --force
 
 #----------------------------------------------------------
 # Linting
 #----------------------------------------------------------
 .PHONY: lint
-lint: ## run all pre-commit checks across the repo
-	pre-commit run --all-files
+lint: ## run all pre-commit hooks across the repo (via prek)
+	mise exec -- prek run --all-files
 
 # ----------------------------------------------------------------
 # login

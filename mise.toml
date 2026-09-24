@@ -57,10 +57,13 @@ awscli     = "2"
 # pair from modules/identity-center's live state, instead of hand-writing each
 # `<account-name>.<role-name>` profile (see CLAUDE.md).
 "pipx:aws-sso-util" = "latest"
-# Hook runner for .pre-commit-config.yaml (`make pre-commit`).
-pre-commit = "4"
-# Runtime for pre-commit itself and its Python-based hooks
-# (conventional-pre-commit, pre-commit-hooks).
+# Hook runner for .pre-commit-config.yaml (`make lint`, `mise run pre-commit`,
+# and the Git shims from `prek install`) - a Rust drop-in for pre-commit that
+# reads the same config unchanged. Hooks are cached under ~/.cache/prek.
+prek       = "0.5"
+# Interpreter for the pipx-installed tools below (aws-sso-util, checkov); prek
+# builds its own uv-managed envs for the Python-based hooks
+# (conventional-pre-commit, pre-commit-hooks) and finds this one on PATH.
 python     = "3.12"
 # Required by mise's pipx backend, used below for aws-sso-util/checkov.
 pipx       = "latest"
@@ -81,8 +84,8 @@ pipx       = "latest"
 TF_VAR_FILE = "eks-cluster.tfvars"
 
 [tasks.pre-commit]
-description = "Run all pre-commit hooks"
-run = "pre-commit run --all-files"
+description = "Run all pre-commit hooks (via prek)"
+run = "prek run --all-files"
 
 [tasks.context]
 description = "Point kubeconfig at the eks-cluster layer's cluster"

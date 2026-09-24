@@ -54,7 +54,7 @@ this still true."
 
 6. **Verify without mutating state.** Run the project's read-only checks —
    formatters and validators (`terraform fmt -check`, `terraform validate`,
-   linters, type checkers, `pre-commit run --all-files`) — never a command
+   linters, type checkers, `make lint`) — never a command
    that applies, deploys, or destroys anything, even for a "just comments"
    change. In this repo specifically: **never run `apply` or `destroy`, or
    any Make target that wraps them — only `plan`/`validate`/`fmt`/other
