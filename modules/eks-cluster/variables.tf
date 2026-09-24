@@ -43,10 +43,10 @@ variable "dns_zone_writer_role_arn" {
 
 variable "dns_zone_id" {
   type        = string
-  description = "Route53 hosted zone ID, from 01-identity-center's dns_zone_id output. The zone itself lives in the management account, not this one."
+  description = "Route53 hosted zone ID, from identity-center's dns_zone_id output. The zone itself lives in the management account, not this one."
 }
 
 variable "dns_zone_name" {
   type        = string
-  description = "Domain name of the zone above, from 01-identity-center's dns_zone_name output."
+  description = "Domain name of the zone above, from identity-center's dns_zone_name output."
 }

@@ -49,7 +49,7 @@ resource "aws_iam_role" "github_actions_plan" {
 }
 
 # ReadOnlyAccess, not a hand-scoped policy: `terragrunt plan` across
-# 01-identity-center/eks-cluster/eks-workloads touches a wide, evolving set
+# identity-center/eks-cluster/eks-workloads touches a wide, evolving set
 # of read-only AWS APIs (Organizations, SSO admin, EKS, VPC, ACM, Route53,
 # ECR, IAM, CloudFormation...) - narrowing it resource-by-resource would
 # need updating on every new resource type this repo ever adds, and a

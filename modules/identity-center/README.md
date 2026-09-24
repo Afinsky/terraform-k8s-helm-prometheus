@@ -1,11 +1,13 @@
-# 01-identity
+# identity-center
 
 Terraform module for the Organization + IAM Identity Center layer, applied via
-[`accounts/abotyan001/us-east-1/01-identity-center`](../../accounts/abotyan001/us-east-1/01-identity-center)'s
-`terragrunt.hcl`. Creates the AWS Organization, groups, users, group
+the [`units/identity-center`](../../units/identity-center) unit template,
+which the management account's
+[`terragrunt.stack.hcl`](../../accounts/abotyan001/us-east-1/terragrunt.stack.hcl)
+instantiates once. Creates the AWS Organization, groups, users, group
 memberships, and all permission sets/assignments. Structure and backend
 pattern match [`eks-cluster`](../eks-cluster): S3 backend and inputs managed by
-Terragrunt (see `../../root.hcl` and that layer's `terragrunt.hcl`).
+Terragrunt (see `../../root.hcl` and that unit's `terragrunt.hcl`).
 
 Terraform can't handle only the things the `hashicorp/aws` provider has no
 resource for:
@@ -18,7 +20,12 @@ resource for:
 
 ## Order of operations
 
+Every `terragrunt` command below runs in the generated unit directory:
+
 ```bash
+make stacks   # terragrunt stack generate for every account
+cd accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center
+
 terragrunt init
 
 # 1. Create only the Organization — Identity Center doesn't exist yet, the
@@ -62,8 +69,9 @@ those first.
 
 ## Variables
 
-See `variables.tf`. `profile` is always `terraform` here, unlike `../eks-cluster`'s
-`terragrunt.hcl` (which uses the `abotyan001-root.devops-admin` SSO profile that this
-stack itself defines): at the time of the first apply, that SSO profile doesn't
-exist yet - and this stack must never apply under the identity it's defining
-(see `provider.tf`).
+See `variables.tf`. `profile` is always `terraform` here (hardcoded in the unit
+template, not a stack value), unlike the `eks-cluster`/`eks-workloads` units
+(which use each workload account's `<account-name>.devops-admin` SSO profile that
+this stack itself defines): at the time of the first apply, that SSO profile
+doesn't exist yet - and this stack must never apply under the identity it's
+defining (see `provider.tf`).

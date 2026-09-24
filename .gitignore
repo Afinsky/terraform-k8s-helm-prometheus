@@ -8,6 +8,7 @@ docs/
 
 #Terragrunt
 **/.terragrunt-cache
+**/.terragrunt-stack
 **/backend.tf
 
 #Trivy

@@ -8,11 +8,11 @@ name: Plan
 # github-actions-plan, ReadOnlyAccess only - this workflow has no
 # credential path to anything that writes).
 #
-# Five layers, matching the account_access_stackset.tf chain used
-# elsewhere in this repo: abotyan001's three layers assume
-# github-actions-plan directly; workloads-dev's two layers chain through
-# it into github-actions-plan-target (auto-deployed into every member
-# account by that same StackSet).
+# One job per unit (each generated from its account's terragrunt.stack.hcl),
+# matching the account_access_stackset.tf chain used elsewhere in this repo:
+# abotyan001's identity-center assumes github-actions-plan directly; a
+# workload account's units chain through it into github-actions-plan-target
+# (auto-deployed into every member account by that same StackSet).
 #
 # Requires (not yet done as of writing this workflow - apply
 # modules/identity-center's github_oidc.tf / account_access_stackset.tf
@@ -39,36 +39,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: 01-identity-center
-            layer: accounts/abotyan001/us-east-1/01-identity-center
+          - name: identity-center
+            layer: accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center
             profile: terraform
             chain: false
-          # No abotyan001/eks-cluster or eks-workloads entries here on
-          # purpose - by design, no workload account infra runs in the
-          # management account (abotyan001), only 01-identity-center.
-          # Those two layer directories are leftover copies from before
-          # workloads-dev existed and were never really applied there (and
-          # never will be) - eks-workloads' kubernetes/helm providers can't
-          # produce a meaningful plan without a real cluster behind them
-          # regardless of any CI credentials, since a dependency that has
-          # never been applied only ever gives them a mock endpoint to
-          # dial. Once those directories are removed from the repo, drop
-          # this comment along with them.
           - name: workloads-dev/eks-cluster
-            layer: accounts/workloads-dev/us-east-1/eks-cluster
+            layer: accounts/workloads-dev/us-east-1/.terragrunt-stack/eks-cluster
             profile: workloads-dev.devops-admin
             chain: true
+            account_id: "841775659851"
           # workloads-dev/eks-workloads is temporarily NOT in this matrix -
-          # unlike abotyan001's leftover layers above, this one IS the real
-          # target and belongs here once its eks-cluster dependency has
-          # actually been applied for the first time. Until then, its
-          # kubernetes/helm providers have no real cluster to reach (same
-          # structural wall as abotyan001's, just not permanent this time) -
-          # add this entry back right after that first apply:
+          # it belongs here once its eks-cluster dependency has actually
+          # been applied for the first time. Until then, its kubernetes/helm
+          # providers have no real cluster to reach: a dependency that has
+          # never been applied only ever gives them a mock endpoint to dial,
+          # whatever CI credentials are available. Add this entry back right
+          # after that first apply:
           #   - name: workloads-dev/eks-workloads
-          #     layer: accounts/workloads-dev/us-east-1/eks-workloads
+          #     layer: accounts/workloads-dev/us-east-1/.terragrunt-stack/eks-workloads
           #     profile: workloads-dev.devops-admin
           #     chain: true
+          #     account_id: "841775659851"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,6 +69,14 @@ jobs:
 
       - name: Run make setup
         run: make setup
+
+      # Every unit exists only as a generated, gitignored .terragrunt-stack/
+      # dir - and unlike `run --all`, a single-unit `terragrunt plan` doesn't
+      # generate it itself. Every account's stack, not just this job's: the
+      # eks-* units depend on abotyan001's generated identity-center. Pure
+      # file generation, no AWS credentials needed.
+      - name: Generate Terragrunt stacks
+        run: make stacks
 
       # Assumes github-actions-plan directly. For workloads-dev layers this
       # is only the FIRST hop - see "Chain into member-account role" below.
@@ -93,10 +92,10 @@ jobs:
       # profile) - it's what the S3 backend itself, and
       # --dependency-fetch-output-from-state below, use to read a layer's
       # state. For abotyan001 it's always "terraform" (the default, never
-      # overridden there) regardless of which of its 3 layers you're in -
-      # and every eks-cluster/eks-workloads layer in ANY account declares a
+      # overridden there) - and every eks-cluster/eks-workloads unit in ANY
+      # account declares a
       # `dependency "identity_center"` pointing at abotyan001's
-      # 01-identity-center, so this profile is needed everywhere, not just
+      # identity-center, so this profile is needed everywhere, not just
       # in abotyan001's own jobs. Written here, from the base
       # github-actions-plan session (ReadOnlyAccess in abotyan001), before
       # the workloads-dev chaining below overwrites the ambient AWS_* env
@@ -108,15 +107,15 @@ jobs:
           aws configure set aws_session_token "$AWS_SESSION_TOKEN" --profile terraform
           aws configure set region us-east-1 --profile terraform
 
-      # workloads-dev's own account ID (841775659851, account.hcl) - chains
-      # sts:AssumeRole from github-actions-plan into
+      # matrix.account_id is the member account's own ID (its account.hcl) -
+      # chains sts:AssumeRole from github-actions-plan into
       # github-actions-plan-target, same shape as this repo's own
       # terraform -> terraform-management -> terraform-target chain.
       - name: Chain into member-account role
         if: matrix.chain
         run: |
           creds=$(aws sts assume-role \
-            --role-arn arn:aws:iam::841775659851:role/github-actions-plan-target \
+            --role-arn arn:aws:iam::${{ matrix.account_id }}:role/github-actions-plan-target \
             --role-session-name gha-plan-target-${{ github.run_id }} \
             --query Credentials --output json)
           {
@@ -141,10 +140,10 @@ jobs:
           aws configure set region us-east-1 --profile terraform-management
 
       # provider.tf in every module reads a *named* profile
-      # (`profile = var.profile`, set per-layer by that layer's
-      # terragrunt.hcl), not bare env-var credentials - write the session's
-      # credentials into the exact profile name each layer expects instead
-      # of touching any terragrunt.hcl.
+      # (`profile = var.profile`, set by units/identity-center's template
+      # or by a workload account's terragrunt.stack.hcl values), not bare
+      # env-var credentials - write the session's credentials into the exact
+      # profile name each unit expects instead of touching any config.
       - name: Write AWS profile this layer's terragrunt.hcl expects
         run: |
           aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID" --profile ${{ matrix.profile }}

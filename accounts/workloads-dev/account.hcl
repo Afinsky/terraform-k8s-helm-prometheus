@@ -7,7 +7,7 @@
 
 locals {
   aws_account_alias = "workloads-dev"
-  aws_account_id    = "841775659851" # from 01-identity-center's `account_ids` output
+  aws_account_id    = "841775659851" # from identity-center's `account_ids` output
 
   # This account's own state bucket, created inside itself — not in abotyan001's
   # central "dev-me-terraform-state" — the first time `--backend-bootstrap` runs

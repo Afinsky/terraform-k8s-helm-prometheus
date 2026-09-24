@@ -1,12 +1,16 @@
 #-------------------------------------------------------------
 # terragrunt.hcl
 #
-# - same modules/eks-workloads module as accounts/abotyan001/us-east-1/eks-workloads,
-#   applied into the workloads-dev account instead
-# - depends on ../eks-cluster (this account's own): see that layer's
-#   terragrunt.hcl comment
-# - backend key comes from state.hcl (see root.hcl); bucket/profile/role come
-#   from account.hcl
+# Unit template, not a live unit - see ../eks-cluster/terragrunt.hcl's header
+# for how a workload account's terragrunt.stack.hcl instantiates it.
+#
+# - wire up the modules/eks-workloads module and configure its inputs
+# - depends on the eks-cluster unit generated next to it: everything here
+#   talks to the cluster/VPC/ACM cert that unit creates, consumed via its
+#   outputs below (no module.eks/module.vpc reference is possible across a
+#   Terragrunt dependency boundary)
+# - backend key comes from state.hcl (copied next to the generated unit, see
+#   root.hcl); bucket/profile/role come from the account's account.hcl
 #-------------------------------------------------------------
 
 include {
@@ -18,8 +22,13 @@ terraform {
 }
 
 dependency "eks_cluster" {
+  # Sibling inside the same .terragrunt-stack/ - so the stack file must
+  # generate the eks-cluster unit at path = "eks-cluster".
   config_path = "../eks-cluster"
 
+  # Lets `plan`/`validate` work before eks-cluster has ever been applied
+  # (fresh account, CI, etc.) - `apply` still requires real outputs, since
+  # only "validate"/"plan"/"init" are in mock_outputs_allowed_terraform_commands.
   mock_outputs = {
     cluster_name                       = "mock-cluster-name"
     cluster_endpoint                   = "https://mock.eks.amazonaws.com"
@@ -32,11 +41,10 @@ dependency "eks_cluster" {
   mock_outputs_allowed_terraform_commands = ["validate", "plan", "init"]
 }
 
-# See ../eks-cluster/terragrunt.hcl's identity_center dependency comment for
-# why this replaced global.hcl's hardcoded dns_zone_writer_role_arn/
-# secrets_reader_role_arn/dns_zone_name literals.
+# Same shape as ../eks-cluster/terragrunt.hcl's identity_center dependency -
+# see its comments for why it's absolute and why cross-account works.
 dependency "identity_center" {
-  config_path = "../../../abotyan001/us-east-1/01-identity-center"
+  config_path = "${get_repo_root()}/accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center"
 
   mock_outputs = {
     dns_zone_writer_role_arn = "arn:aws:iam::000000000000:role/mock-dns-zone-writer"
@@ -47,11 +55,8 @@ dependency "identity_center" {
 }
 
 inputs = {
-  # SSO profile for account_id 841775659851, role "devops-admin" — that
-  # permission set is assigned org-wide by modules/identity-center/permission_sets.tf,
-  # so no new IAM role/trust policy was needed for this account.
-  profile     = "workloads-dev.devops-admin"
-  environment = "dev"
+  profile     = values.profile
+  environment = values.environment
   region      = "us-east-1"
   repo_root   = get_repo_root()
 
