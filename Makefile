@@ -10,13 +10,13 @@ SHELL := $(shell which bash) # set default shell
 # eg make identity-center apply                -> accounts/abotyan001/us-east-1/.terragrunt-stack/identity-center
 # eg make ACCOUNT=workloads-dev eks-cluster apply -> accounts/workloads-dev/us-east-1/.terragrunt-stack/eks-cluster
 ACCOUNT ?= abotyan001
-ACCOUNT_DIR := accounts/$(ACCOUNT)/us-east-1
+REGION := us-east-1
+ACCOUNT_DIR := accounts/$(ACCOUNT)/$(REGION)
 
 LOCK_ID :=
 
 PORTAL_URL := https://abatsian.awsapps.com/start
 SSO_REGION := us-east-1
-REGION := us-east-1
 
 .DEFAULT: help # Running Make will run the help target
 
@@ -222,7 +222,7 @@ aws-sso-configure-populate: ## aws-sso-util configure populate (creates ~/.aws/c
   		--sso-region $(SSO_REGION) \
   		--region $(REGION) \
   		--components account_name,role_name \
-  		--separator '-'
+  		--separator '.'
 
 
 # ----------------------------------------------------------------

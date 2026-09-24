@@ -86,9 +86,9 @@ module "eks" {
 
   # false on purpose: true grants the identity Terraform runs
   # as an invisible admin access entry that never shows up in
-  # `aws eks list-access-entries`. Made it explicit below ("terraform" entry)
-  # instead - every helm_release/kubernetes_manifest resource in this
-  # environment authenticates as that same identity and needs it.
+  # `aws eks list-access-entries`. Made it explicit below ("devops-admin"
+  # entry) instead - eks-workloads' helm_release/kubernetes_manifest
+  # resources authenticate as that same identity and need it.
   enable_cluster_creator_admin_permissions = false
 
   access_entries = merge(
