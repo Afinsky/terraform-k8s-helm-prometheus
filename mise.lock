@@ -7,6 +7,12 @@ version = "1.7.12"
 backend = "aqua:rhysd/actionlint"
 specifiers = ["1.7.12"]
 
+[tools.actionlint."platforms.linux-arm64"]
+checksum = "sha256:325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6"
+url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/rhysd/actionlint/releases/assets/384924897"
+provenance = "github-attestations"
+
 [tools.actionlint."platforms.linux-x64"]
 checksum = "sha256:8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8"
 url = "https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz"
@@ -24,6 +30,10 @@ version = "2.36.44"
 backend = "aqua:aws/aws-cli"
 specifiers = ["2"]
 
+[tools.awscli."platforms.linux-arm64"]
+checksum = "blake3:07bf9b5343438a640c956e560f586b9e55a908588cbd664d21588544d7682e6e"
+url = "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-2.36.44.zip"
+
 [tools.awscli."platforms.linux-x64"]
 url = "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.36.44.zip"
 
@@ -34,6 +44,11 @@ url = "https://awscli.amazonaws.com/AWSCLIV2-2.36.44.pkg"
 version = "8.24.2"
 backend = "aqua:gitleaks/gitleaks"
 specifiers = ["8.24.2"]
+
+[tools.gitleaks."platforms.linux-arm64"]
+checksum = "sha256:574a6d52573c61173add7ddb5e3cc68c0e82cb0735818a1eeb9a0a2de1643fbc"
+url = "https://github.com/gitleaks/gitleaks/releases/download/v8.24.2/gitleaks_8.24.2_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/gitleaks/gitleaks/releases/assets/239807001"
 
 [tools.gitleaks."platforms.linux-x64"]
 checksum = "sha256:fa0500f6b7e41d28791ebc680f5dd9899cd42b58629218a5f041efa899151a8e"
@@ -50,6 +65,10 @@ version = "4.2.4"
 backend = "aqua:helm/helm"
 specifiers = ["4.2"]
 
+[tools.helm."platforms.linux-arm64"]
+checksum = "sha256:564de2191b881e9f71b5606b25345821ea1682f06ab90499d3ab22b530176da1"
+url = "https://get.helm.sh/helm-v4.2.4-linux-arm64.tar.gz"
+
 [tools.helm."platforms.linux-x64"]
 checksum = "sha256:c306b46f719b0a4da32d0f78ee21bf90ce8d602f15b22ab753f0674d1670a7f3"
 url = "https://get.helm.sh/helm-v4.2.4-linux-amd64.tar.gz"
@@ -63,6 +82,10 @@ version = "1.34.11"
 backend = "aqua:kubernetes/kubernetes/kubectl"
 specifiers = ["1.34"]
 
+[tools.kubectl."platforms.linux-arm64"]
+checksum = "sha256:5b045a4712674c88a56fd98eef4285689738b7fbe8735e1b9ee3509521af5cb4"
+url = "https://dl.k8s.io/v1.34.11/bin/linux/arm64/kubectl"
+
 [tools.kubectl."platforms.linux-x64"]
 checksum = "sha256:8efbb9435132a190920eb65a47a8c1ecf755ad85ab57a600c9bedbab460bb7a8"
 url = "https://dl.k8s.io/v1.34.11/bin/linux/amd64/kubectl"
@@ -75,6 +98,11 @@ url = "https://dl.k8s.io/v1.34.11/bin/darwin/arm64/kubectl"
 version = "5.7.1"
 backend = "aqua:kubernetes-sigs/kustomize"
 specifiers = ["5.7"]
+
+[tools.kustomize."platforms.linux-arm64"]
+checksum = "sha256:4261a040217df3bd6896597c3986d1465925726e4f22a945304b5233a4dcdbda"
+url = "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v5.7.1/kustomize_v5.7.1_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/kubernetes-sigs/kustomize/releases/assets/275587121"
 
 [tools.kustomize."platforms.linux-x64"]
 checksum = "sha256:ea375e7372f9aa029129d4b2d16c66b7750b7f1213c4f66f910d981c895818d8"
@@ -90,6 +118,11 @@ url_api = "https://api.github.com/repos/kubernetes-sigs/kustomize/releases/asset
 version = "1.17.2"
 backend = "aqua:pypa/pipx"
 specifiers = ["latest"]
+
+[tools.pipx."platforms.linux-arm64"]
+checksum = "sha256:31d517b7afebf55d3b597d613c735389068a973a54712a50641845cf2cb2bb1d"
+url = "https://github.com/pypa/pipx/releases/download/1.17.2/pipx.pyz"
+url_api = "https://api.github.com/repos/pypa/pipx/releases/assets/540192956"
 
 [tools.pipx."platforms.linux-x64"]
 checksum = "sha256:31d517b7afebf55d3b597d613c735389068a973a54712a50641845cf2cb2bb1d"
@@ -116,6 +149,12 @@ version = "0.5.3"
 backend = "aqua:j178/prek"
 specifiers = ["0.5"]
 
+[tools.prek."platforms.linux-arm64"]
+checksum = "sha256:4cfc936895e8b4e1e2f92daca61bb7c8eb123bac14585ba9f706b599776cdcc8"
+url = "https://github.com/j178/prek/releases/download/v0.5.3/prek-aarch64-unknown-linux-gnu.tar.gz"
+url_api = "https://api.github.com/repos/j178/prek/releases/assets/560889195"
+provenance = "github-attestations"
+
 [tools.prek."platforms.linux-x64"]
 checksum = "sha256:c1475ddc56df0003c780557d9b52273d9eb19c9ef8d91143f3ce03511182a36e"
 url = "https://github.com/j178/prek/releases/download/v0.5.3/prek-x86_64-unknown-linux-gnu.tar.gz"
@@ -133,6 +172,11 @@ version = "3.12.14"
 backend = "core:python"
 specifiers = ["3.12"]
 
+[tools.python."platforms.linux-arm64"]
+checksum = "blake3:3d03b9d15e05d8ce9361177483d0679adfdf94af874ddcbebfb55044cb817959"
+url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14+20260901-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz"
+provenance = "github-attestations"
+
 [tools.python."platforms.linux-x64"]
 checksum = "sha256:72748da13197c1fb161e3afeef20a6a385ff24f2165e6e2758e47008e7faba4c"
 url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260901/cpython-3.12.14+20260901-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz"
@@ -148,6 +192,10 @@ version = "1.15.9"
 backend = "aqua:hashicorp/terraform"
 specifiers = ["1.15"]
 
+[tools.terraform."platforms.linux-arm64"]
+checksum = "sha256:0afa6c29f61ca5ea270e950e43e50ecf2418b598507bf580e8ae76e1e6699b19"
+url = "https://releases.hashicorp.com/terraform/1.15.9/terraform_1.15.9_linux_arm64.zip"
+
 [tools.terraform."platforms.linux-x64"]
 checksum = "sha256:76edd0b22d2f27d3d2e097cd793209646f719cf60f02ff3af626b07361137da1"
 url = "https://releases.hashicorp.com/terraform/1.15.9/terraform_1.15.9_linux_amd64.zip"
@@ -160,6 +208,11 @@ url = "https://releases.hashicorp.com/terraform/1.15.9/terraform_1.15.9_darwin_a
 version = "0.24.0"
 backend = "aqua:terraform-docs/terraform-docs"
 specifiers = ["0.24"]
+
+[tools.terraform-docs."platforms.linux-arm64"]
+checksum = "sha256:d12bd7b73c1fc9c64efc79f8157dd713dabd559f1ecf3cfc0f42e32279a155fd"
+url = "https://github.com/terraform-docs/terraform-docs/releases/download/v0.24.0/terraform-docs-v0.24.0-linux-arm64.tar.gz"
+url_api = "https://api.github.com/repos/terraform-docs/terraform-docs/releases/assets/416956212"
 
 [tools.terraform-docs."platforms.linux-x64"]
 checksum = "sha256:9005daf969de0b50134493a2c00078b49f5f5b39d021cda7c89bf4d4f3d776d3"
@@ -176,6 +229,11 @@ version = "1.0.8"
 backend = "aqua:gruntwork-io/terragrunt"
 specifiers = ["1.0"]
 
+[tools.terragrunt."platforms.linux-arm64"]
+checksum = "sha256:31cf316e1294a9514e9c8738f66d6ce02f868cb0ca7066ce5b460efaa1a8df1c"
+url = "https://github.com/gruntwork-io/terragrunt/releases/download/v1.0.8/terragrunt_linux_arm64.tar.gz"
+url_api = "https://api.github.com/repos/gruntwork-io/terragrunt/releases/assets/443994830"
+
 [tools.terragrunt."platforms.linux-x64"]
 checksum = "sha256:6215504eba5a0730a11bec689a70b8afff39e62f00564ef557f2b6ab58ae3449"
 url = "https://github.com/gruntwork-io/terragrunt/releases/download/v1.0.8/terragrunt_linux_amd64.tar.gz"
@@ -190,6 +248,12 @@ url_api = "https://api.github.com/repos/gruntwork-io/terragrunt/releases/assets/
 version = "0.64.0"
 backend = "aqua:terraform-linters/tflint"
 specifiers = ["0.64"]
+
+[tools.tflint."platforms.linux-arm64"]
+checksum = "sha256:560da89aacf59389d4eb029730dd5b109b7288096c32f2726a0d9e783a5ea8eb"
+url = "https://github.com/terraform-linters/tflint/releases/download/v0.64.0/tflint_linux_arm64.zip"
+url_api = "https://api.github.com/repos/terraform-linters/tflint/releases/assets/480528325"
+provenance = "github-attestations"
 
 [tools.tflint."platforms.linux-x64"]
 checksum = "sha256:cca9d13e2e1d7a2c627af60ff899a3c9b74212899416aeb96ec764d2ef954537"
@@ -207,6 +271,12 @@ provenance = "github-attestations"
 version = "0.74.0"
 backend = "aqua:aquasecurity/trivy"
 specifiers = ["0.74.0"]
+
+[tools.trivy."platforms.linux-arm64"]
+checksum = "sha256:b94ce1976bbf3c15b514b605ee88be7c6d94a29be2302847ff01cb794d47aad5"
+url = "https://github.com/aquasecurity/trivy/releases/download/v0.74.0/trivy_0.74.0_Linux-ARM64.tar.gz"
+url_api = "https://api.github.com/repos/aquasecurity/trivy/releases/assets/514339429"
+provenance = "cosign"
 
 [tools.trivy."platforms.linux-x64"]
 checksum = "sha256:2ae6fe3ee734b7fdf11335663e18c75ea12dccc76062f09f164a3b0f8be4371a"
